@@ -1,0 +1,1906 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>교과학습발달상황 작성 실습 - 교사 연수용 웹앱</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome CDN for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Noto Sans KR -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f7ff',
+                            100: '#e0effe',
+                            500: '#2563eb',
+                            600: '#1d4ed8',
+                            700: '#1e40af',
+                        },
+                        tealBrand: {
+                            500: '#0d9488',
+                            600: '#0f766e',
+                        },
+                        accentOrange: {
+                            500: '#f97316',
+                            600: '#ea580c',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Noto Sans KR', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #f8fafc;
+        }
+        /* Custom scrollbars for textareas and cards */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        .pulse-subtle {
+            animation: pulse-border 2s infinite;
+        }
+        @keyframes pulse-border {
+            0%, 100% { border-color: rgba(37, 99, 235, 0.4); }
+            50% { border-color: rgba(37, 99, 235, 0.9); }
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen flex flex-col justify-between selection:bg-blue-100 selection:text-blue-800">
+
+    <!-- Top Privacy & Mode Warning Bar -->
+    <div class="bg-amber-500 text-white text-xs py-1.5 px-4 text-center font-medium shadow-sm flex items-center justify-center gap-2">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <span><strong>[연수 실습 모드]</strong> 본 웹앱은 교사 연수용 실습 도구입니다. 실제 학생의 이름 및 민감정보를 입력하지 마세요.</span>
+    </div>
+
+    <!-- Main Navigation Header -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
+        <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between gap-2">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-lg shadow-md shadow-blue-500/20 shrink-0">
+                    <i class="fa-solid fa-user-graduate"></i>
+                </div>
+                <div>
+                    <h1 class="text-base sm:text-lg font-bold text-slate-900 leading-tight">교과학습발달상황 작성 실습</h1>
+                    <p class="text-xs text-slate-500 hidden sm:block">수행평가 결과를 성취수준과 특기사항으로 연결하기</p>
+                </div>
+            </div>
+
+            <!-- Controls (Subject Selector & API Settings) -->
+            <div class="flex items-center gap-2">
+                <!-- API Settings Button -->
+                <button onclick="openApiModal()" id="api-status-badge" class="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold transition-colors">
+                    <i class="fa-solid fa-plug-circle-bolt text-slate-500" id="api-status-icon"></i>
+                    <span id="api-status-text">API 설정</span>
+                </button>
+
+                <!-- Subject Quick Selector Badge -->
+                <div id="subject-badge-container" class="flex items-center gap-1.5 bg-blue-50 hover:bg-blue-100 border border-blue-200 transition-colors cursor-pointer px-3 py-1.5 rounded-lg" onclick="openSubjectModal()">
+                    <i class="fa-solid fa-book-bookmark text-blue-600 text-xs"></i>
+                    <span id="current-subject-display-badge" class="text-xs font-semibold text-blue-900">수학 - 막대그래프</span>
+                    <i class="fa-solid fa-chevron-down text-blue-400 text-xs ml-0.5"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step Progress Bar Indicator -->
+        <div class="bg-slate-50 border-t border-slate-200/80 py-2.5 px-4 overflow-x-auto">
+            <div class="max-w-4xl mx-auto min-w-[340px]">
+                <div class="flex items-center justify-between text-xs font-medium text-slate-500 mb-1.5 px-1" id="step-names-container">
+                    <!-- Dynamic Step Labels rendered by JS -->
+                </div>
+                <!-- Progress Line -->
+                <div class="w-full bg-slate-200 h-2 rounded-full overflow-hidden flex">
+                    <div id="progress-bar-fill" class="bg-blue-600 h-full transition-all duration-300 ease-out" style="width: 16.66%;"></div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Dynamic View Area -->
+    <main id="app-container" class="max-w-4xl mx-auto px-4 py-6 flex-1 w-full">
+        <!-- Content will be rendered dynamically by JavaScript based on state -->
+    </main>
+
+    <!-- Modal for Subject Selection -->
+    <div id="subject-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-100 transform transition-all">
+            <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-3">
+                <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                    <i class="fa-solid fa-book-open text-blue-600"></i> 실습 사례 교과 선택
+                </h3>
+                <button onclick="closeSubjectModal()" class="text-slate-400 hover:text-slate-600 p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <p class="text-xs text-slate-500 mb-4">연수에서 실습하고자 하는 4학년 1학기 교과 수행평가 사례를 선택해 주세요.</p>
+            <div class="space-y-3" id="subject-options-container">
+                <!-- Subject Cards populated by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for API Integration Settings -->
+    <div id="api-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-slate-100 transform transition-all space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                    <i class="fa-solid fa-key text-blue-600"></i> AI API 연동 설정
+                </h3>
+                <button onclick="closeApiModal()" class="text-slate-400 hover:text-slate-600 p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <p class="text-xs text-slate-600 leading-relaxed">
+                OpenAI 또는 Google Gemini API 키를 입력하여 실시간 생성형 AI로 학생 평가 결과 분석 및 특기사항 문장을 생성할 수 있습니다. 입력된 API 키는 브라우저에만 저장됩니다.
+            </p>
+
+            <div class="space-y-3 text-xs">
+                <!-- Provider Selector -->
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">AI 서비스 제공자 선택</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button type="button" onclick="selectApiProvider('mock')" id="btn-provider-mock" class="p-2.5 rounded-xl border text-center font-bold transition-all border-blue-600 bg-blue-50 text-blue-700">
+                            오프라인 내장
+                        </button>
+                        <button type="button" onclick="selectApiProvider('openai')" id="btn-provider-openai" class="p-2.5 rounded-xl border text-center font-bold transition-all border-slate-200 bg-white text-slate-700 hover:bg-slate-50">
+                            OpenAI (ChatGPT)
+                        </button>
+                        <button type="button" onclick="selectApiProvider('gemini')" id="btn-provider-gemini" class="p-2.5 rounded-xl border text-center font-bold transition-all border-slate-200 bg-white text-slate-700 hover:bg-slate-50">
+                            Google Gemini
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Model Selection (Hidden for Mock) -->
+                <div id="api-model-group" class="hidden">
+                    <label class="block font-bold text-slate-700 mb-1">사용 모델 선택</label>
+                    <select id="api-model-select" class="w-full p-2.5 rounded-xl border border-slate-300 text-xs font-semibold bg-white outline-none focus:ring-2 focus:ring-blue-500">
+                        <!-- Options injected dynamically -->
+                    </select>
+                </div>
+
+                <!-- API Key Input Field (Hidden for Mock) -->
+                <div id="api-key-group" class="hidden">
+                    <label class="block font-bold text-slate-700 mb-1 flex justify-between items-center">
+                        <span>API Key 입력</span>
+                        <a href="javascript:void(0)" id="api-key-help-link" target="_blank" class="text-[11px] text-blue-600 hover:underline">키 발급 안내 <i class="fa-solid fa-up-right-from-square text-[10px]"></i></a>
+                    </label>
+                    <div class="relative">
+                        <input type="password" id="api-key-input" placeholder="sk-..." class="w-full p-2.5 pr-10 rounded-xl border border-slate-300 text-xs font-mono outline-none focus:ring-2 focus:ring-blue-500" />
+                        <button type="button" onclick="toggleApiKeyVisibility()" class="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600">
+                            <i class="fa-solid fa-eye" id="api-key-eye-icon"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Connection Test Feedback Status Box -->
+                <div id="api-test-status" class="p-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 text-[11px] hidden">
+                    <!-- Status dynamic content -->
+                </div>
+            </div>
+
+            <!-- Modal Action Buttons -->
+            <div class="flex items-center justify-between border-t border-slate-100 pt-3 gap-2">
+                <button type="button" onclick="testApiConnection()" id="btn-test-api" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs px-3.5 py-2.5 rounded-xl transition-colors hidden">
+                    <i class="fa-solid fa-vial mr-1"></i> 연결 테스트
+                </button>
+                <div class="flex items-center gap-2 ml-auto">
+                    <button type="button" onclick="closeApiModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs px-4 py-2.5 rounded-xl transition-colors">
+                        취소
+                    </button>
+                    <button type="button" onclick="saveApiSettings()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-md transition-all">
+                        설정 저장
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Alert / Message Modal -->
+    <div id="custom-alert-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-5 shadow-xl border border-slate-100 text-center space-y-3">
+            <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto text-xl">
+                <i class="fa-solid fa-circle-info" id="alert-modal-icon"></i>
+            </div>
+            <h4 class="font-bold text-slate-800 text-sm" id="alert-modal-title">알림</h4>
+            <p class="text-xs text-slate-600 leading-relaxed" id="alert-modal-message">메시지 내용</p>
+            <button onclick="closeCustomAlert()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs py-2.5 rounded-xl transition-colors">
+                확인
+            </button>
+        </div>
+    </div>
+
+    <!-- Custom Confirm Modal -->
+    <div id="custom-confirm-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-5 shadow-xl border border-slate-100 text-center space-y-3">
+            <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto text-xl">
+                <i class="fa-solid fa-circle-question"></i>
+            </div>
+            <h4 class="font-bold text-slate-800 text-sm" id="confirm-modal-title">확인</h4>
+            <p class="text-xs text-slate-600 leading-relaxed" id="confirm-modal-message">정말 진행하시겠습니까?</p>
+            <div class="flex items-center gap-2 pt-1">
+                <button id="confirm-modal-cancel-btn" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs py-2.5 rounded-xl transition-colors">
+                    취소
+                </button>
+                <button id="confirm-modal-ok-btn" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs py-2.5 rounded-xl transition-colors">
+                    확인
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast Modal -->
+    <div id="toast" class="fixed bottom-6 right-6 bg-slate-800 text-white px-4 py-3 rounded-xl shadow-lg border border-slate-700 text-xs font-medium flex items-center gap-2.5 translate-y-16 opacity-0 transition-all duration-300 z-50 pointer-events-none">
+        <i id="toast-icon" class="fa-solid fa-circle-check text-green-400 text-sm"></i>
+        <span id="toast-message">저장되었습니다.</span>
+    </div>
+
+    <footer class="bg-white border-t border-slate-200 py-4 px-4 mt-8">
+        <div class="max-w-4xl mx-auto flex flex-col sm:flex-row justify-between items-center text-xs text-slate-500 gap-2">
+            <p>© 초등 교과역량 기반 교과학습발달상황 작성 연수 도구 (API 연동 지원)</p>
+            <div class="flex items-center gap-4 text-slate-400">
+                <span class="hover:text-slate-600 cursor-pointer" onclick="openSubjectModal()"><i class="fa-solid fa-rotate-right mr-1"></i>과목 변경</span>
+                <span>|</span>
+                <span class="hover:text-slate-600 cursor-pointer" onclick="confirmResetCurrentSubjectData()"><i class="fa-solid fa-arrow-rotate-left mr-1"></i>현재 과목 데이터 초기화</span>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // ==========================================
+        // DATA STRUCTURE FOR PRACTICE EXAMPLES
+        // ==========================================
+        const PRACTICE_SUBJECTS = {
+            math: {
+                id: 'math',
+                title: '[수학] 4학년 1학기 - 막대그래프',
+                badgeText: '수학 - 막대그래프',
+                grade: '4학년 1학기',
+                subjectName: '수학',
+                unit: '5. 막대그래프',
+                achievementStandard: '[4수04-01] 자료를 수집하여 그림그래프나 막대그래프로 나타내고 해석할 수 있다.',
+                domain: '자료와 가능성',
+                evalElement: '자료를 수집하고 정리하여 막대그래프로 나타내고 해석하기',
+                evalMethod: '조사 보고서',
+                evalCriteriaText: {
+                    A: '자기의 조사 목적에 맞는 적절한 자료를 수집하여 막대그래프로 정확하게 나타내고 자료를 바르게 해석할 수 있다.',
+                    B: '자기의 조사 목적에 맞는 자료를 수집하여 막대그래프로 나타내고 자료를 해석할 수 있다.',
+                    C: '자기의 조사 목적과 관련된 자료를 수집하여 막대그래프로 나타내는 데 어려움을 보인다.'
+                },
+                evalItems: [
+                    '① 조사할 내용에 따른 조사 자료를 적절하게 수집했는가?',
+                    '② 수집한 자료를 정리해서 막대그래프를 활용한 보고서를 완성했는가?',
+                    '③ 활동에 흥미를 가지고 적극적으로 참여했는가?'
+                ],
+                students: {
+                    1: {
+                        id: '학생 ①',
+                        realLevel: 'A',
+                        topic: '우리 반 친구들이 좋아하는 운동',
+                        performance: [
+                            '조사할 내용을 스스로 정함.',
+                            '친구들에게 자료를 수집함.',
+                            '조사한 자료를 정리함.',
+                            '막대그래프의 제목과 항목을 정확하게 작성함.',
+                            '막대의 길이를 자료에 맞게 표현함.',
+                            '그래프를 보고 가장 많은 항목과 가장 적은 항목을 정확하게 찾아냄.',
+                            '조사 결과를 자신의 말로 설명함.'
+                        ],
+                        observation: '조사 목적에 맞는 자료를 스스로 선정하고 친구들에게 질문하여 자료를 수집함. 자료를 정리한 뒤 막대그래프로 정확하게 표현하였으며, 그래프에서 알 수 있는 내용을 근거를 들어 설명함.',
+                        aiAnalysis: {
+                            suggestedLevel: 'A',
+                            reasons: [
+                                '조사 목적에 맞는 자료를 적절하게 수집함.',
+                                '자료를 막대그래프로 정확하게 나타냄.',
+                                '그래프의 자료를 해석함.',
+                                '조사 결과를 자신의 말로 설명함.'
+                            ],
+                            suggestedComment: '조사 목적에 맞는 자료를 스스로 선정하여 정확한 막대그래프로 표현하였으며, 그래프의 최댓값과 최솟값을 바탕으로 조사 결과를 체계적으로 해석하여 자신의 말로 설명함.'
+                        }
+                    },
+                    2: {
+                        id: '학생 ②',
+                        realLevel: 'B',
+                        topic: '우리 반 친구들의 희망 장래희망',
+                        performance: [
+                            '조사할 내용을 정하고 자료를 수집함.',
+                            '수집한 자료를 막대그래프로 나타냄.',
+                            '그래프의 기본적인 형식은 갖추었음.',
+                            '가장 많은 자료와 가장 적은 자료를 찾을 수 있음.',
+                            '그래프의 자료를 설명할 때 일부 내용을 정확하게 표현하지 못함.'
+                        ],
+                        observation: '자료 수집과 그래프 작성은 스스로 수행함. 그래프를 읽어 기본적인 내용을 설명할 수 있으나 자료의 특징을 자세히 설명하는 데에는 어려움을 보임.',
+                        aiAnalysis: {
+                            suggestedLevel: 'B',
+                            reasons: [
+                                '조사 목적에 맞는 자료를 수집함.',
+                                '자료를 막대그래프로 기본적 형식에 맞춰 나타냄.',
+                                '최댓값 및 최솟값을 파악하나 자세한 특성 설명 시 부분적 정교성 부족.'
+                            ],
+                            suggestedComment: '조사 목적에 부합하는 자료를 수집하여 막대그래프로 나타낼 수 있으며, 그래프를 읽어 기본적인 정보를 파악하나 자료 간 관계를 상세히 설명하는 데 향상이 필요함.'
+                        }
+                    },
+                    3: {
+                        id: '학생 ③',
+                        realLevel: 'C',
+                        topic: '우리 반 친구들의 등교 수단',
+                        performance: [
+                            '조사할 내용과 자료를 정하는 데 교사의 도움이 필요함.',
+                            '수집한 자료를 정리하는 데 어려움을 보임.',
+                            '막대그래프의 기본적인 형태는 작성할 수 있음.',
+                            '막대의 길이를 자료에 맞게 표현하는 데 일부 오류가 있음.',
+                            '그래프를 보고 자료의 특징을 설명하는 데 어려움을 보임.'
+                        ],
+                        observation: '자료를 수집하고 정리하는 과정에서 지속적인 안내가 필요했으며, 막대그래프를 작성할 때 눈금과 자료의 관계를 이해하는 데 어려움을 보임. 간단한 질문에는 답할 수 있으나 그래프를 근거로 설명하는 데에는 추가적인 도움이 필요함.',
+                        aiAnalysis: {
+                            suggestedLevel: 'C',
+                            reasons: [
+                                '자료 선정 및 정리 단계에서 지속적인 교사 서포트 필요함.',
+                                '눈금과 자료 관계 이해 오차로 막대의 길이에 오류 발생.',
+                                '그래프에 기반한 정보 해석 및 설명에 추가적 유도가 필요함.'
+                            ],
+                            suggestedComment: '교사의 도움을 받아 자료를 정리를 시도하고 막대그래프 형태를 갖추었으나, 눈금 크기에 맞춘 오차 없는 표현과 그래프 해석을 위해 지속적인 보완 지도가 필요함.'
+                        }
+                    }
+                }
+            },
+            science: {
+                id: 'science',
+                title: '[과학] 4학년 1학기 - 물의 상태 변화',
+                badgeText: '과학 - 물의 상태 변화',
+                grade: '4학년 1학기',
+                subjectName: '과학',
+                unit: '2. 물의 상태 변화',
+                achievementStandard: '[4과14-01] 물이 얼 때와 얼음이 녹을 때의 변화를 관찰하여 비교할 수 있다.',
+                domain: '물질의 상태',
+                evalElement: '물의 상태 변화(얼 때와 녹을 때) 관찰 및 부피/무게 변화 설명하기',
+                evalMethod: '실험 관찰 보고서',
+                evalCriteriaText: {
+                    A: '물이 얼 때와 얼음이 녹을 때의 부피와 무게 변화를 관찰하여 원인을 명확하게 비교하고 설명할 수 있다.',
+                    B: '물이 얼 때와 얼음이 녹을 때의 상태 변화를 관찰하고 부피나 무게의 변화를 비교할 수 있다.',
+                    C: '교사의 안내에 따라 상태 변화 실험에 참여하나 부피와 무게의 변화를 비교 설명하는 데 어려움이 있다.'
+                },
+                evalItems: [
+                    '① 얼음과 물의 상태 변화 실험 과정에 안전하고 적극적으로 참여하였는가?',
+                    '② 물이 얼 때와 얼음이 녹을 때 부피와 무게 변화를 정확히 측정하고 기록했는가?',
+                    '③ 실험 관찰 결과를 바탕으로 상태 변화의 특징을 제대로 비교·설명했는가?'
+                ],
+                students: {
+                    1: {
+                        id: '학생 ①',
+                        realLevel: 'A',
+                        topic: '물이 얼 때와 얼음이 녹을 때의 변화',
+                        performance: [
+                            '실험 기구를 안전하게 사용하여 얼음과 물의 상태 변화 실험에 참여함.',
+                            '물이 얼 때 부피가 늘어나고 무게는 변하지 않음을 정밀하게 측정함.',
+                            '얼음이 녹을 때 부피가 줄어들고 무게가 일정함을 제대로 수치로 기록함.',
+                            '관찰 결과를 바탕으로 부피와 무게 변화의 관계를 명확히 비교 설명함.'
+                        ],
+                        observation: '실험 탐구 활동에 적극적이며 눈금자 실린더 및 저울을 정확히 다룸. 물이 얼 때 부피는 늘어나지만 무게는 일정하다는 사실을 정밀하게 기록하고 탐구 보고서에 논리적으로 작성함.',
+                        aiAnalysis: {
+                            suggestedLevel: 'A',
+                            reasons: [
+                                '실험 기구 다루기 능력이 정밀함.',
+                                '상태 변화 시 부피 변화와 무게 불변의 원리를 명확히 비교 파악함.',
+                                '관찰 기록을 논리적 문장으로 스스로 구성함.'
+                            ],
+                            suggestedComment: '물이 얼 때와 얼음이 녹을 때의 부피 변화와 무게 보존 개념을 정밀하게 관찰 측정하였으며, 실험 결과를 바탕으로 상태 변화의 주요 특성을 논리적으로 설명함.'
+                        }
+                    },
+                    2: {
+                        id: '학생 ②',
+                        realLevel: 'B',
+                        topic: '물이 얼 때와 얼음이 녹을 때의 변화',
+                        performance: [
+                            '실험 과정에 흥미를 가지고 열심히 참여함.',
+                            '물이 얼면 부피가 늘어남을 눈금으로 확인함.',
+                            '무게 변화 측정 결과를 기록하였으나 부피 변화의 이유에 대한 설명은 다소 단편적임.',
+                            '상태 변화의 특징 중 부피 변화 중심으로 비교함.'
+                        ],
+                        observation: '실험 수행 과정에 자발적으로 참여하며 물이 얼 때 부피가 커지는 현상을 바르게 관찰함. 무게가 유지된다는 점은 파악하였으나 종합적인 원인 설명에는 약간의 안내가 도움이 됨.',
+                        aiAnalysis: {
+                            suggestedLevel: 'B',
+                            reasons: [
+                                '실험 참여도 우수하고 부피 변화 관찰 성공.',
+                                '무게 보존 개념을 확인하였으나 깊이 있는 설명은 일부 단편적임.'
+                            ],
+                            suggestedComment: '물이 얼 때와 얼음이 녹을 때의 현상을 잘 관찰하여 부피와 무게의 변화를 기본적으로 비교 및 정돈할 수 있음.'
+                        }
+                    },
+                    3: {
+                        id: '학생 ③',
+                        realLevel: 'C',
+                        topic: '물이 얼 때와 얼음이 녹을 때의 변화',
+                        performance: [
+                            '실험 기구 사용에 보조 도움이 필요함.',
+                            '물이 얼 때 부피와 무게가 어떻게 바뀌는지 수치 관찰에 어려움을 보임.',
+                            '부피가 늘어나는 현상과 무게 변화를 혼동함.',
+                            '실험 결과를 기록표에 채우는 데 모둠원의 도움이 필요함.'
+                        ],
+                        observation: '상태 변화 현상 자체에는 관심을 보이나, 눈금 읽기 및 저울 측정 시 지속적 도움이 필요함. 부피가 커지는 것을 무게가 무거워지는 것으로 혼동하는 경향이 있어 보완 지도가 필요함.',
+                        aiAnalysis: {
+                            suggestedLevel: 'C',
+                            reasons: [
+                                '측정 도구 사용 지도가 지속 필요함.',
+                                '부피와 무게 개념의 상충 혼동 관찰됨.',
+                                '독자적 보고서 완성에 세밀한 안내가 필요함.'
+                            ],
+                            suggestedComment: '교사의 안내에 따라 물의 상태 변화 실험에 참여하며, 부피 및 무게의 명확한 개념 이해와 측정 도구 활용을 위해 정교한 피드백 학습이 필요함.'
+                        }
+                    }
+                }
+            },
+            english: {
+                id: 'english',
+                title: '[영어] 4학년 1학기 - Where\'s My Cap?',
+                badgeText: '영어 - Where\'s My Cap?',
+                grade: '4학년 1학기',
+                subjectName: '영어',
+                unit: '3. Where\'s My Cap?',
+                achievementStandard: '[4영01-02] 사물의 위치를 묻고 답하는 말을 듣고 이해하며 표현할 수 있다.',
+                domain: '말하기 / 듣기',
+                evalElement: '위치를 나타내는 낱말(on, in, under, behind)을 활용하여 사물의 위치 묻고 답하기',
+                evalMethod: '구통 수행평가 및 짝 활동 관찰',
+                evalCriteriaText: {
+                    A: '사물의 위치를 묻고 답하는 주요 표현(Where is/It\'s on, in, under, behind)을 위치 낱말과 함께 정확하고 유창하게 표현할 수 있다.',
+                    B: '사물의 위치를 묻고 답하는 말을 이해하고 핵심 표현을 바탕으로 위치를 말할 수 있다.',
+                    C: '교사의 힌트나 시각 자료의 도움을 받아 사물의 위치 표현을 부분적으로 말할 수 있다.'
+                },
+                evalItems: [
+                    '① 위치 관련 핵심 전치사(on, in, under, behind)의 의미를 바르게 이해하는가?',
+                    '② "Where\'s ~?" 의문문 구조로 위치를 질문할 수 있는가?',
+                    '③ "It\'s on/in/under/behind the ~." 구문으로 유창하고 바른 억양으로 답하는가?'
+                ],
+                students: {
+                    1: {
+                        id: '학생 ①',
+                        realLevel: 'A',
+                        topic: 'Where\'s My Cap? (위치 묻고 답하기)',
+                        performance: [
+                            '그림 카드를 보고 "Where\'s my cap?"을 자연스럽게 말함.',
+                            '위치 낱말 on, in, under, behind를 적재적소에 구분하여 구사함.',
+                            '"It\'s under the table."과 같이 올바른 전치사 및 명사를 써서 완전한 문장으로 답변함.',
+                            '짝 활동 시 자신감 있게 대화를 주도함.'
+                        ],
+                        observation: '위치 낱말에 대한 이해도가 매우 뛰어나며, 발음과 억양이 매우 자연스러움. 친구의 질문에 망설임 없이 문장 형태("It\'s on the desk.")로 올바르게 대답함.',
+                        aiAnalysis: {
+                            suggestedLevel: 'A',
+                            reasons: [
+                                '핵심 전치사(on, in, under, behind) 구사 완벽함.',
+                                '의문문과 평서문 구문 구조를 완전한 문장으로 완성함.',
+                                '발음과 억양이 자연스럽고 상호작용 의욕 높음.'
+                            ],
+                            suggestedComment: '사물의 위치를 묻고 답하는 표현을 매우 유창하게 구사하며, 다양한 위치 전치사를 활용하여 완전한 문장 구조로 명확하게 의사소통함.'
+                        }
+                    },
+                    2: {
+                        id: '학생 ②',
+                        realLevel: 'B',
+                        topic: 'Where\'s My Cap? (위치 묻고 답하기)',
+                        performance: [
+                            '"Where\'s the ball?" 질문을 듣고 의미를 잘 이해함.',
+                            'on, in은 잘 구분하여 말하지만 under와 behind에서 잠시 망설임.',
+                            '"It\'s on table"처럼 관사 등을 일부 생략하나 핵심 위치 단어는 정확히 전달함.'
+                        ],
+                        observation: '위치 묻기 질문의 핵심을 이해하고 대답할 수 있음. 전치사 일부 표현에서 유두리 있게 생각할 시간이 약간 필요하나 대화 전달 목적은 잘 달성함.',
+                        aiAnalysis: {
+                            suggestedLevel: 'B',
+                            reasons: [
+                                '질문 이해력 양호함.',
+                                '핵심 위치 단어 전치사를 사용하여 대답 가능함.',
+                                '일부 전치사 구사 시 약간의 정체 및 관사 생략이 관찰됨.'
+                            ],
+                            suggestedComment: '사물의 위치를 묻고 답하는 표현을 이해하여 핵심 위치 낱말을 활용해 말할 수 있으며, 자신감 있는 연속 대화 표현 연습이 유용함.'
+                        }
+                    },
+                    3: {
+                        id: '학생 ③',
+                        realLevel: 'C',
+                        topic: 'Where\'s My Cap? (위치 묻고 답하기)',
+                        performance: [
+                            '"Where\'s the book?" 질문을 들었을 때 낱말 단위("desk", "on")로 단편 대답함.',
+                            '그림 자료와 교사의 동작 시연 힌트가 있어야 위치 단어를 떠올림.',
+                            '문장 형태("It\'s on the...")로 연결해 말하는 데 도움이 필요함.'
+                        ],
+                        observation: '위치 질문을 들었을 때 어휘를 생각해 내는 데 시간이 걸리며, "It\'s in the box." 형태의 문장 구성에는 교사의 시범 대답이 필요함.',
+                        aiAnalysis: {
+                            suggestedLevel: 'C',
+                            reasons: [
+                                '단어 수준 대답에 머물며 문장 구율에 어려움.',
+                                '시각적/언어적 힌트 보조가 요구됨.'
+                            ],
+                            suggestedComment: '교사의 제스처 및 힌트를 받아 위치 낱말을 인지하여 말할 수 있으며, 문장 단위로 확장하여 답하는 반복 연습이 지속 요구됨.'
+                        }
+                    }
+                }
+            }
+        };
+
+        // ==========================================
+        // APPLICATION STATE MANAGEMENT
+        // ==========================================
+        let appState = {
+            currentStep: 1, // 1 to 6
+            selectedSubjectId: 'math', // default
+            apiConfig: {
+                provider: 'mock', // 'mock', 'openai', 'gemini'
+                apiKey: '',
+                model: 'gpt-4o-mini',
+                isConnected: false
+            },
+            isGeneratingAi: false,
+            // Student Evaluation Storage: subjectId -> studentId -> data
+            judgments: {
+                math: { 1: { level: null, reason: '' }, 2: { level: null, reason: '' }, 3: { level: null, reason: '' } },
+                science: { 1: { level: null, reason: '' }, 2: { level: null, reason: '' }, 3: { level: null, reason: '' } },
+                english: { 1: { level: null, reason: '' }, 2: { level: null, reason: '' }, 3: { level: null, reason: '' } }
+            },
+            comments: {
+                math: { 1: '', 2: '', 3: '' },
+                science: { 1: '', 2: '', 3: '' },
+                english: { 1: '', 2: '', 3: '' }
+            },
+            teacherReflections: {
+                math: { reasonDiff: '', sentenceDiff: '', q1: '', q2: '', q3: '', q4: '' },
+                science: { reasonDiff: '', sentenceDiff: '', q1: '', q2: '', q3: '', q4: '' },
+                english: { reasonDiff: '', sentenceDiff: '', q1: '', q2: '', q3: '', q4: '' }
+            },
+            missions: {
+                step1Done: true,
+                step2Done: false,
+                step3Done: false,
+                step4Done: false,
+                step5Done: false,
+                step6Done: false
+            }
+        };
+
+        const STEP_NAMES = [
+            '① 실습 안내',
+            '② 평가기준',
+            '③ 학생자료',
+            '④ 성취수준',
+            '⑤ 특기사항',
+            '⑥ 비교·정리'
+        ];
+
+        // ==========================================
+        // INITIALIZATION & LOCAL STORAGE
+        // ==========================================
+        window.addEventListener('DOMContentLoaded', () => {
+            loadStateFromLocalStorage();
+            updateApiStatusBadgeUI();
+            renderApp();
+        });
+
+        function saveStateToLocalStorage() {
+            try {
+                localStorage.setItem('teacher_eval_practice_state_v2', JSON.stringify(appState));
+            } catch (e) {
+                console.error('LocalStorage save error', e);
+            }
+        }
+
+        function loadStateFromLocalStorage() {
+            try {
+                const saved = localStorage.getItem('teacher_eval_practice_state_v2');
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    appState = { ...appState, ...parsed };
+                }
+            } catch (e) {
+                console.error('LocalStorage load error', e);
+            }
+        }
+
+        function confirmResetCurrentSubjectData() {
+            const subjName = PRACTICE_SUBJECTS[appState.selectedSubjectId].badgeText;
+            openCustomConfirm(
+                '데이터 초기화 확인',
+                `[${subjName}] 영역의 모든 작성 내용 및 평가 판단을 초기화하시겠습니까?`,
+                () => {
+                    appState.judgments[appState.selectedSubjectId] = { 1: { level: null, reason: '' }, 2: { level: null, reason: '' }, 3: { level: null, reason: '' } };
+                    appState.comments[appState.selectedSubjectId] = { 1: '', 2: '', 3: '' };
+                    appState.teacherReflections[appState.selectedSubjectId] = { reasonDiff: '', sentenceDiff: '', q1: '', q2: '', q3: '', q4: '' };
+                    saveStateToLocalStorage();
+                    showToast('초기화되었습니다.');
+                    renderApp();
+                }
+            );
+        }
+
+        // ==========================================
+        // STEP CONTROLLER & NAVIGATION
+        // ==========================================
+        function goToStep(stepNumber) {
+            if (stepNumber < 1 || stepNumber > 6) return;
+
+            // Step Guards: Ensure teacher completes necessary fields before moving forward
+            if (stepNumber >= 5 && appState.currentStep === 4) {
+                const curSubj = appState.selectedSubjectId;
+                const j = appState.judgments[curSubj];
+                if (!j[1].level || !j[2].level || !j[3].level) {
+                    openCustomAlert('필수 단계 확인', '모든 학생(①, ②, ③)의 성취수준(A/B/C)을 먼저 선택해 주세요!');
+                    return;
+                }
+            }
+
+            if (stepNumber === 6) {
+                const curSubj = appState.selectedSubjectId;
+                const c = appState.comments[curSubj];
+                if (!c[1].trim() || !c[2].trim() || !c[3].trim()) {
+                    openCustomConfirm(
+                        '특기사항 미작성 항목 안내',
+                        '아직 일부 학생의 특기사항이 작성되지 않았습니다. AI 비교 단계로 계속 이동하시겠습니까?',
+                        () => {
+                            executeStepChange(stepNumber);
+                        }
+                    );
+                    return;
+                }
+            }
+
+            executeStepChange(stepNumber);
+        }
+
+        function executeStepChange(stepNumber) {
+            appState.currentStep = stepNumber;
+            updateMissionStatus();
+            saveStateToLocalStorage();
+            renderApp();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function updateMissionStatus() {
+            if (appState.currentStep >= 2) appState.missions.step2Done = true;
+            if (appState.currentStep >= 3) appState.missions.step3Done = true;
+            
+            const curSubj = appState.selectedSubjectId;
+            const j = appState.judgments[curSubj];
+            if (j[1].level && j[2].level && j[3].level) appState.missions.step4Done = true;
+
+            const c = appState.comments[curSubj];
+            if (c[1] && c[2] && c[3]) appState.missions.step5Done = true;
+
+            if (appState.currentStep === 6) appState.missions.step6Done = true;
+        }
+
+        function changeSubject(subjectId) {
+            appState.selectedSubjectId = subjectId;
+            closeSubjectModal();
+            saveStateToLocalStorage();
+            showToast(`${PRACTICE_SUBJECTS[subjectId].badgeText}(으)로 변경되었습니다.`);
+            renderApp();
+        }
+
+        // ==========================================
+        // AI API INTEGRATION SERVICES (OpenAI & Gemini)
+        // ==========================================
+        function selectApiProvider(provider) {
+            appState.apiConfig.provider = provider;
+            
+            const btnMock = document.getElementById('btn-provider-mock');
+            const btnOpenAi = document.getElementById('btn-provider-openai');
+            const btnGemini = document.getElementById('btn-provider-gemini');
+            const modelGroup = document.getElementById('api-model-group');
+            const keyGroup = document.getElementById('api-key-group');
+            const testBtn = document.getElementById('btn-test-api');
+            const modelSelect = document.getElementById('api-model-select');
+            const helpLink = document.getElementById('api-key-help-link');
+
+            // Reset button active UI
+            [btnMock, btnOpenAi, btnGemini].forEach(b => {
+                b.className = "p-2.5 rounded-xl border text-center font-bold transition-all border-slate-200 bg-white text-slate-700 hover:bg-slate-50";
+            });
+
+            if (provider === 'mock') {
+                btnMock.className = "p-2.5 rounded-xl border text-center font-bold transition-all border-blue-600 bg-blue-50 text-blue-700 ring-2 ring-blue-500/20";
+                modelGroup.classList.add('hidden');
+                keyGroup.classList.add('hidden');
+                testBtn.classList.add('hidden');
+            } else if (provider === 'openai') {
+                btnOpenAi.className = "p-2.5 rounded-xl border text-center font-bold transition-all border-blue-600 bg-blue-50 text-blue-700 ring-2 ring-blue-500/20";
+                modelGroup.classList.remove('hidden');
+                keyGroup.classList.remove('hidden');
+                testBtn.classList.remove('hidden');
+                helpLink.href = 'https://platform.openai.com/api-keys';
+
+                modelSelect.innerHTML = `
+                    <option value="gpt-4o-mini">gpt-4o-mini (추천 - 빠름 & 저렴)</option>
+                    <option value="gpt-4o">gpt-4o (고성능 표준)</option>
+                `;
+                appState.apiConfig.model = 'gpt-4o-mini';
+            } else if (provider === 'gemini') {
+                btnGemini.className = "p-2.5 rounded-xl border text-center font-bold transition-all border-teal-600 bg-teal-50 text-teal-700 ring-2 ring-teal-500/20";
+                modelGroup.classList.remove('hidden');
+                keyGroup.classList.remove('hidden');
+                testBtn.classList.remove('hidden');
+                helpLink.href = 'https://aistudio.google.com/app/apikey';
+
+                modelSelect.innerHTML = `
+                    <option value="gemini-1.5-flash">gemini-1.5-flash (추천 - 빠른 속도)</option>
+                    <option value="gemini-1.5-pro">gemini-1.5-pro (정교한 분석)</option>
+                `;
+                appState.apiConfig.model = 'gemini-1.5-flash';
+            }
+        }
+
+        function toggleApiKeyVisibility() {
+            const input = document.getElementById('api-key-input');
+            const icon = document.getElementById('api-key-eye-icon');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.className = 'fa-solid fa-eye-slash';
+            } else {
+                input.type = 'password';
+                icon.className = 'fa-solid fa-eye';
+            }
+        }
+
+        function saveApiSettings() {
+            const provider = appState.apiConfig.provider;
+            if (provider !== 'mock') {
+                const keyInput = document.getElementById('api-key-input').value.trim();
+                const modelSelect = document.getElementById('api-model-select').value;
+                if (!keyInput) {
+                    openCustomAlert('입력 오류', 'API Key를 입력해 주세요!');
+                    return;
+                }
+                appState.apiConfig.apiKey = keyInput;
+                appState.apiConfig.model = modelSelect;
+                appState.apiConfig.isConnected = true;
+            } else {
+                appState.apiConfig.apiKey = '';
+                appState.apiConfig.isConnected = false;
+            }
+
+            saveStateToLocalStorage();
+            updateApiStatusBadgeUI();
+            closeApiModal();
+            showToast('API 설정이 저장되었습니다.');
+        }
+
+        function updateApiStatusBadgeUI() {
+            const icon = document.getElementById('api-status-icon');
+            const text = document.getElementById('api-status-text');
+            const badge = document.getElementById('api-status-badge');
+
+            if (appState.apiConfig.provider === 'openai' && appState.apiConfig.apiKey) {
+                icon.className = 'fa-solid fa-brain text-emerald-600';
+                text.innerText = `OpenAI (${appState.apiConfig.model})`;
+                badge.className = 'flex items-center gap-1.5 bg-emerald-50 text-emerald-800 border border-emerald-300 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors';
+            } else if (appState.apiConfig.provider === 'gemini' && appState.apiConfig.apiKey) {
+                icon.className = 'fa-solid fa-wand-magic-sparkles text-teal-600';
+                text.innerText = `Gemini (${appState.apiConfig.model})`;
+                badge.className = 'flex items-center gap-1.5 bg-teal-50 text-teal-800 border border-teal-300 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors';
+            } else {
+                icon.className = 'fa-solid fa-plug-circle-bolt text-slate-500';
+                text.innerText = 'API 설정 (오프라인)';
+                badge.className = 'flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold transition-colors';
+            }
+        }
+
+        async function testApiConnection() {
+            const provider = appState.apiConfig.provider;
+            const apiKey = document.getElementById('api-key-input').value.trim();
+            const model = document.getElementById('api-model-select').value;
+            const statusBox = document.getElementById('api-test-status');
+
+            if (!apiKey) {
+                openCustomAlert('입력 확인', 'API Key를 먼저 입력해 주세요.');
+                return;
+            }
+
+            statusBox.classList.remove('hidden');
+            statusBox.className = 'p-3 rounded-xl bg-blue-50 border border-blue-200 text-blue-800 text-[11px] flex items-center gap-2';
+            statusBox.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin text-blue-600"></i> API 연결을 테스트하는 중입니다...`;
+
+            try {
+                if (provider === 'openai') {
+                    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${apiKey}`
+                        },
+                        body: JSON.stringify({
+                            model: model,
+                            messages: [{ role: 'user', content: 'Say "OK"' }],
+                            max_tokens: 5
+                        })
+                    });
+                    const data = await res.json();
+                    if (res.ok) {
+                        statusBox.className = 'p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-semibold';
+                        statusBox.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-600 mr-1"></i> OpenAI API 연결 성공! (${model})`;
+                    } else {
+                        throw new Error(data.error?.message || 'OpenAI API 응답 오류');
+                    }
+                } else if (provider === 'gemini') {
+                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{ parts: [{ text: 'Say OK' }] }]
+                        })
+                    });
+                    const data = await res.json();
+                    if (res.ok) {
+                        statusBox.className = 'p-3 rounded-xl bg-teal-50 border border-teal-200 text-teal-800 text-[11px] font-semibold';
+                        statusBox.innerHTML = `<i class="fa-solid fa-circle-check text-teal-600 mr-1"></i> Google Gemini API 연결 성공! (${model})`;
+                    } else {
+                        throw new Error(data.error?.message || 'Gemini API 응답 오류');
+                    }
+                }
+            } catch (err) {
+                statusBox.className = 'p-3 rounded-xl bg-red-50 border border-red-200 text-red-800 text-[11px] font-semibold';
+                statusBox.innerHTML = `<i class="fa-solid fa-circle-xmark text-red-600 mr-1"></i> 연결 실패: ${err.message}`;
+            }
+        }
+
+        // Real-time Dynamic AI Prompt & Analysis Call
+        async function triggerLiveAiAnalysisAllStudents() {
+            const provider = appState.apiConfig.provider;
+            if (provider === 'mock' || !appState.apiConfig.apiKey) {
+                openCustomAlert('API 미설정 안내', '실시간 API 연동 분석을 실행하려면 [API 설정]에서 OpenAI 또는 Gemini API Key를 저장해 주세요. 현재는 내장된 오프라인 샘플 AI 분석 데이터를 표시합니다.');
+                return;
+            }
+
+            appState.isGeneratingAi = true;
+            renderApp();
+            showToast('AI 실시간 분석을 요청 중입니다...');
+
+            const subject = PRACTICE_SUBJECTS[appState.selectedSubjectId];
+
+            for (let stId of [1, 2, 3]) {
+                const student = subject.students[stId];
+                
+                const prompt = `
+[초등 교과 성취기준 및 관찰 기록 분석 요청]
+과목: ${subject.grade} ${subject.subjectName} (${subject.unit})
+성취기준: ${subject.achievementStandard}
+평가요소: ${subject.evalElement}
+
+성취수준 기준:
+- A: ${subject.evalCriteriaText.A}
+- B: ${subject.evalCriteriaText.B}
+- C: ${subject.evalCriteriaText.C}
+
+[학생 ${stId} 수행 내역]
+수행 결과: ${student.performance.join(' / ')}
+교사 관찰 소견: ${student.observation}
+
+위 자료를 바탕으로 대한민국 초등학교 생활기록부 '교과학습발달상황' 작성 지침에 맞춰 분석해 주세요.
+반드시 아래 JSON 형식으로만 응답해 주세요 (마크다운 포맷 없이 pure JSON만):
+{
+  "suggestedLevel": "A" 또는 "B" 또는 "C",
+  "reasons": ["근거 1", "근거 2", "근거 3"],
+  "suggestedComment": "학생이 무엇을 할 수 있는지 명확히 보여주는 1~2문장의 격식체 특기사항(~함, ~임 어조)."
+}
+`;
+
+                try {
+                    let jsonResult = null;
+                    if (provider === 'openai') {
+                        const res = await fetch('https://api.openai.com/v1/chat/completions', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${appState.apiConfig.apiKey}`
+                            },
+                            body: JSON.stringify({
+                                model: appState.apiConfig.model,
+                                messages: [
+                                    { role: 'system', content: 'You are an expert Korean elementary education evaluator. Respond only in JSON.' },
+                                    { role: 'user', content: prompt }
+                                ],
+                                response_format: { type: "json_object" }
+                            })
+                        });
+                        const data = await res.json();
+                        jsonResult = JSON.parse(data.choices[0].message.content);
+                    } else if (provider === 'gemini') {
+                        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${appState.apiConfig.model}:generateContent?key=${appState.apiConfig.apiKey}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                contents: [{ parts: [{ text: prompt }] }],
+                                generationConfig: { responseMimeType: "application/json" }
+                            })
+                        });
+                        const data = await res.json();
+                        const rawText = data.candidates[0].content.parts[0].text;
+                        jsonResult = JSON.parse(rawText);
+                    }
+
+                    if (jsonResult && jsonResult.suggestedLevel && jsonResult.suggestedComment) {
+                        student.aiAnalysis = {
+                            suggestedLevel: jsonResult.suggestedLevel,
+                            reasons: jsonResult.reasons || [],
+                            suggestedComment: jsonResult.suggestedComment
+                        };
+                    }
+                } catch (e) {
+                    console.error(`학생 ${stId} AI 분석 중 오류:`, e);
+                }
+            }
+
+            appState.isGeneratingAi = false;
+            saveStateToLocalStorage();
+            showToast('AI 실시간 분석이 완료되었습니다!');
+            renderApp();
+        }
+
+        // Custom UI Modal Handlers
+        function openCustomAlert(title, message) {
+            document.getElementById('alert-modal-title').innerText = title;
+            document.getElementById('alert-modal-message').innerText = message;
+            document.getElementById('custom-alert-modal').classList.remove('hidden');
+        }
+        function closeCustomAlert() {
+            document.getElementById('custom-alert-modal').classList.add('hidden');
+        }
+
+        function openCustomConfirm(title, message, onOk) {
+            document.getElementById('confirm-modal-title').innerText = title;
+            document.getElementById('confirm-modal-message').innerText = message;
+            
+            const cancelBtn = document.getElementById('confirm-modal-cancel-btn');
+            const okBtn = document.getElementById('confirm-modal-ok-btn');
+
+            const modal = document.getElementById('custom-confirm-modal');
+            modal.classList.remove('hidden');
+
+            const close = () => modal.classList.add('hidden');
+
+            cancelBtn.onclick = () => close();
+            okBtn.onclick = () => {
+                close();
+                if (onOk) onOk();
+            };
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toast-message');
+            if (toast && toastMsg) {
+                toastMsg.innerText = msg;
+                toast.classList.remove('translate-y-16', 'opacity-0');
+                toast.classList.add('translate-y-0', 'opacity-100');
+                setTimeout(() => {
+                    toast.classList.remove('translate-y-0', 'opacity-100');
+                    toast.classList.add('translate-y-16', 'opacity-0');
+                }, 2500);
+            }
+        }
+
+        // Modal Helpers
+        function openSubjectModal() {
+            renderSubjectModalOptions();
+            document.getElementById('subject-modal').classList.remove('hidden');
+        }
+        function closeSubjectModal() {
+            document.getElementById('subject-modal').classList.add('hidden');
+        }
+        function openApiModal() {
+            selectApiProvider(appState.apiConfig.provider);
+            if (appState.apiConfig.apiKey) {
+                document.getElementById('api-key-input').value = appState.apiConfig.apiKey;
+            }
+            document.getElementById('api-modal').classList.remove('hidden');
+        }
+        function closeApiModal() {
+            document.getElementById('api-modal').classList.add('hidden');
+        }
+
+        // ==========================================
+        // RENDER ROUTINER
+        // ==========================================
+        function renderApp() {
+            renderHeaderProgress();
+            const container = document.getElementById('app-container');
+            
+            switch (appState.currentStep) {
+                case 1:
+                    container.innerHTML = renderStep1Guide();
+                    break;
+                case 2:
+                    container.innerHTML = renderStep2Criteria();
+                    break;
+                case 3:
+                    container.innerHTML = renderStep3StudentData();
+                    break;
+                case 4:
+                    container.innerHTML = renderStep4Judgment();
+                    break;
+                case 5:
+                    container.innerHTML = renderStep5CommentWriting();
+                    break;
+                case 6:
+                    container.innerHTML = renderStep6AIComparison();
+                    break;
+                default:
+                    container.innerHTML = renderStep1Guide();
+            }
+        }
+
+        function renderHeaderProgress() {
+            const subject = PRACTICE_SUBJECTS[appState.selectedSubjectId];
+            document.getElementById('current-subject-display-badge').innerText = subject.badgeText;
+
+            const percent = (appState.currentStep / 6) * 100;
+            document.getElementById('progress-bar-fill').style.width = `${percent}%`;
+
+            const namesContainer = document.getElementById('step-names-container');
+            namesContainer.innerHTML = STEP_NAMES.map((name, idx) => {
+                const stepNum = idx + 1;
+                const isActive = stepNum === appState.currentStep;
+                const isPassed = stepNum < appState.currentStep;
+                
+                let textColor = 'text-slate-400';
+                if (isActive) textColor = 'text-blue-600 font-bold scale-105 transform';
+                else if (isPassed) textColor = 'text-slate-700 font-medium';
+
+                return `
+                    <span class="${textColor} cursor-pointer hover:text-blue-500 transition-all text-[11px] sm:text-xs" onclick="goToStep(${stepNum})">
+                        ${isPassed ? '<i class="fa-solid fa-circle-check text-blue-500 mr-0.5"></i>' : ''}${name}
+                    </span>
+                `;
+            }).join('');
+        }
+
+        function renderSubjectModalOptions() {
+            const container = document.getElementById('subject-options-container');
+            container.innerHTML = Object.values(PRACTICE_SUBJECTS).map(subj => {
+                const isSelected = subj.id === appState.selectedSubjectId;
+                return `
+                    <div onclick="changeSubject('${subj.id}')" 
+                         class="p-3.5 rounded-xl border ${isSelected ? 'border-blue-500 bg-blue-50/50 ring-2 ring-blue-500/20' : 'border-slate-200 hover:border-slate-300 bg-white'} cursor-pointer transition-all flex items-center justify-between">
+                        <div>
+                            <span class="text-xs font-bold text-blue-600 block mb-0.5">${subj.grade}</span>
+                            <h4 class="text-sm font-bold text-slate-800">${subj.title}</h4>
+                            <p class="text-xs text-slate-500 mt-1">${subj.evalElement}</p>
+                        </div>
+                        ${isSelected ? '<i class="fa-solid fa-circle-check text-blue-600 text-lg"></i>' : '<i class="fa-solid fa-chevron-right text-slate-300"></i>'}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ==========================================
+        // STEP 1: GUIDE & INTRO
+        // ==========================================
+        function renderStep1Guide() {
+            const subject = PRACTICE_SUBJECTS[appState.selectedSubjectId];
+
+            return `
+                <div class="space-y-6">
+                    <!-- Title Hero Banner -->
+                    <div class="bg-gradient-to-br from-blue-700 via-blue-600 to-indigo-700 text-white rounded-3xl p-6 sm:p-8 shadow-xl relative overflow-hidden">
+                        <div class="absolute -right-10 -bottom-10 opacity-10 text-white text-9xl">
+                            <i class="fa-solid fa-graduation-cap"></i>
+                        </div>
+                        <div class="relative z-10 space-y-3">
+                            <span class="inline-block bg-white/20 backdrop-blur-md text-white text-xs px-3 py-1 rounded-full font-semibold">
+                                초등 교사 연수용 실습 플랫폼 (OpenAI / Gemini API 연동)
+                            </span>
+                            <h2 class="text-2xl sm:text-3xl font-extrabold leading-tight">
+                                교과학습발달상황 작성 실습
+                            </h2>
+                            <p class="text-blue-100 text-sm sm:text-base font-light">
+                                수행평가 결과를 성취수준과 특기사항으로 연결하기
+                            </p>
+                            <p class="text-xs sm:text-sm text-blue-200 pt-2 border-t border-white/20">
+                                "수행평가 결과와 교사의 관찰 내용을 바탕으로 학생의 성취수준을 직접 판단하고, 교과학습발달상황 특기사항을 정교하게 작성해 봅니다."
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Selected Case Card Banner -->
+                    <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div class="space-y-1">
+                            <div class="flex items-center gap-2">
+                                <span class="bg-blue-100 text-blue-800 text-xs font-bold px-2.5 py-0.5 rounded-md">현재 선택된 사례</span>
+                                <span class="text-xs font-semibold text-slate-500">${subject.grade}</span>
+                            </div>
+                            <h3 class="text-base font-bold text-slate-800">${subject.title}</h3>
+                            <p class="text-xs text-slate-600">${subject.evalElement}</p>
+                        </div>
+                        <button onclick="openSubjectModal()" class="w-full sm:w-auto bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold px-4 py-2.5 rounded-xl border border-slate-300 transition-colors flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-rotate text-blue-600"></i> 실습 사례 변경하기
+                        </button>
+                    </div>
+
+                    <!-- Practice Steps Guide Cards -->
+                    <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-4">
+                        <h3 class="text-base font-bold text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-3">
+                            <i class="fa-solid fa-list-check text-blue-600"></i> 실습 방법 안내 (6 단계)
+                        </h3>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                            <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex items-start gap-3">
+                                <span class="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold shrink-0 text-xs">1</span>
+                                <div>
+                                    <strong class="text-slate-800 block text-sm font-bold">평가기준 확인</strong>
+                                    <p class="text-slate-500 mt-0.5">수행평가의 성취기준, 평가요소, 평가기준(A/B/C)을 숙지합니다.</p>
+                                </div>
+                            </div>
+                            <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex items-start gap-3">
+                                <span class="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold shrink-0 text-xs">2</span>
+                                <div>
+                                    <strong class="text-slate-800 block text-sm font-bold">학생 수행 자료 관찰</strong>
+                                    <p class="text-slate-500 mt-0.5">학생 ①, ②, ③의 수행 결과와 교사의 관찰 일지를 정독합니다.</p>
+                                </div>
+                            </div>
+                            <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex items-start gap-3">
+                                <span class="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold shrink-0 text-xs">3</span>
+                                <div>
+                                    <strong class="text-slate-800 block text-sm font-bold">성취수준 직접 판단</strong>
+                                    <p class="text-slate-500 mt-0.5">교사 직관과 근거에 따라 A / B / C를 결정하고 근거를 기록합니다.</p>
+                                </div>
+                            </div>
+                            <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex items-start gap-3">
+                                <span class="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold shrink-0 text-xs">4</span>
+                                <div>
+                                    <strong class="text-slate-800 block text-sm font-bold">특기사항 직접 작성</strong>
+                                    <p class="text-slate-500 mt-0.5">학생이 할 수 있는 구체적 수행을 중심으로 특기사항 문장을 서술합니다.</p>
+                                </div>
+                            </div>
+                            <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex items-start gap-3">
+                                <span class="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold shrink-0 text-xs">5</span>
+                                <div>
+                                    <strong class="text-slate-800 block text-sm font-bold">AI 분석 결과 공개 및 비교 (API)</strong>
+                                    <p class="text-slate-500 mt-0.5">교사 작성 후 AI(OpenAI/Gemini API)의 분석을 확인하고 문장을 비교합니다.</p>
+                                </div>
+                            </div>
+                            <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex items-start gap-3">
+                                <span class="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold shrink-0 text-xs">6</span>
+                                <div>
+                                    <strong class="text-slate-800 block text-sm font-bold">성찰 및 최종 문장 완성</strong>
+                                    <p class="text-slate-500 mt-0.5">차이점을 검토하고 본인만의 최종 특기사항 문장을 보완 완성합니다.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Core Principles Warning Callout -->
+                        <div class="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs space-y-1">
+                            <div class="font-bold flex items-center gap-1.5 text-amber-800">
+                                <i class="fa-solid fa-lightbulb text-amber-600 text-sm"></i> 연수 핵심 가치 메시지
+                            </div>
+                            <p class="leading-relaxed">
+                                "AI가 평가하고 기록하는 것이 아니라, <strong>교사가 평가 근거를 바탕으로 판단하고 기록하며</strong>, AI는 그 과정을 다각도로 검토하도록 지원하는 도구입니다."
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex flex-col sm:flex-row items-center justify-end gap-3 pt-2">
+                        <button onclick="goToStep(2)" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-6 py-3.5 rounded-xl shadow-lg shadow-blue-500/25 transition-all flex items-center justify-center gap-2">
+                            <span>실습 시작하기 (평가기준 확인)</span>
+                            <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ==========================================
+        // STEP 2: EVALUATION CRITERIA
+        // ==========================================
+        function renderStep2Criteria() {
+            const subject = PRACTICE_SUBJECTS[appState.selectedSubjectId];
+
+            return `
+                <div class="space-y-6">
+                    <!-- Step Header -->
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                        <div>
+                            <span class="text-xs font-bold text-blue-600">STEP 02</span>
+                            <h2 class="text-lg font-bold text-slate-800">수행평가 기준 확인하기</h2>
+                            <p class="text-xs text-slate-500">평가 실시 전 성취기준과 세부 평가요소 및 A/B/C 성취수준 기준을 숙지합니다.</p>
+                        </div>
+                        <span class="bg-blue-50 text-blue-700 text-xs font-bold px-3 py-1.5 rounded-lg border border-blue-200">
+                            ${subject.grade}
+                        </span>
+                    </div>
+
+                    <!-- Achievement Standard Overview Card -->
+                    <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                            <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+                                <span class="text-slate-400 font-bold block text-[11px]">교육과정 성취기준</span>
+                                <p class="text-sm font-bold text-slate-800">${subject.achievementStandard}</p>
+                            </div>
+                            <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+                                <span class="text-slate-400 font-bold block text-[11px]">평가 요소 & 평가 방법</span>
+                                <p class="text-sm font-bold text-slate-800">${subject.evalElement}</p>
+                                <span class="inline-block bg-slate-200 text-slate-700 font-semibold px-2 py-0.5 rounded text-[11px] mt-1">${subject.evalMethod}</span>
+                            </div>
+                        </div>
+
+                        <!-- Teacher Evaluation Check Items -->
+                        <div class="pt-2">
+                            <h4 class="text-xs font-bold text-slate-700 mb-2.5 flex items-center gap-1.5">
+                                <i class="fa-solid fa-square-check text-blue-600"></i> 교사 세부 평가 항목 (3가지)
+                            </h4>
+                            <div class="space-y-2">
+                                ${subject.evalItems.map(item => `
+                                    <div class="p-3 bg-blue-50/50 rounded-xl border border-blue-100 text-xs font-semibold text-slate-800 flex items-center gap-2">
+                                        <i class="fa-solid fa-check text-blue-600 text-xs"></i>
+                                        <span>${item}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <!-- Standard Levels Criteria Table -->
+                        <div class="pt-2">
+                            <h4 class="text-xs font-bold text-slate-700 mb-2.5 flex items-center gap-1.5">
+                                <i class="fa-solid fa-layer-group text-blue-600"></i> 성취수준 구분 기준 (A / B / C)
+                            </h4>
+                            <div class="space-y-2.5 text-xs">
+                                <div class="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 space-y-1">
+                                    <div class="flex items-center gap-2">
+                                        <span class="w-6 h-6 rounded-lg bg-emerald-600 text-white font-bold flex items-center justify-center text-xs">A</span>
+                                        <strong class="text-emerald-900 text-sm">성취수준 A (상)</strong>
+                                    </div>
+                                    <p class="text-slate-700 pl-8 leading-relaxed">${subject.evalCriteriaText.A}</p>
+                                </div>
+
+                                <div class="p-3.5 rounded-xl bg-blue-50 border border-blue-200 space-y-1">
+                                    <div class="flex items-center gap-2">
+                                        <span class="w-6 h-6 rounded-lg bg-blue-600 text-white font-bold flex items-center justify-center text-xs">B</span>
+                                        <strong class="text-blue-900 text-sm">성취수준 B (중)</strong>
+                                    </div>
+                                    <p class="text-slate-700 pl-8 leading-relaxed">${subject.evalCriteriaText.B}</p>
+                                </div>
+
+                                <div class="p-3.5 rounded-xl bg-amber-50 border border-amber-200 space-y-1">
+                                    <div class="flex items-center gap-2">
+                                        <span class="w-6 h-6 rounded-lg bg-amber-600 text-white font-bold flex items-center justify-center text-xs">C</span>
+                                        <strong class="text-amber-900 text-sm">성취수준 C (하)</strong>
+                                    </div>
+                                    <p class="text-slate-700 pl-8 leading-relaxed">${subject.evalCriteriaText.C}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Navigation Controls -->
+                    <div class="flex items-center justify-between pt-2">
+                        <button onclick="goToStep(1)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs px-4 py-3 rounded-xl transition-colors">
+                            <i class="fa-solid fa-arrow-left mr-1"></i> 이전 (실습 안내)
+                        </button>
+                        <button onclick="goToStep(3)" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-5 py-3 rounded-xl shadow-md transition-all flex items-center gap-2">
+                            <span>평가기준 확인 완료 → 학생 자료 보기</span>
+                            <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ==========================================
+        // STEP 3: STUDENT DATA OBSERVATION
+        // ==========================================
+        function renderStep3StudentData() {
+            const subject = PRACTICE_SUBJECTS[appState.selectedSubjectId];
+
+            return `
+                <div class="space-y-6">
+                    <!-- Step Header -->
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                        <div>
+                            <span class="text-xs font-bold text-blue-600">STEP 03</span>
+                            <h2 class="text-lg font-bold text-slate-800">예시 학생 3명 자료 확인하기</h2>
+                            <p class="text-xs text-slate-500">동일한 수행평가 과제에 대해 각 학생이 보여준 수행 결과와 교사 관찰 소견을 살핍니다.</p>
+                        </div>
+                        <span class="bg-indigo-50 text-indigo-700 text-xs font-semibold px-2.5 py-1 rounded-md border border-indigo-200">
+                            ★ 성취수준 미공개 상태
+                        </span>
+                    </div>
+
+                    <!-- Student Cards Grid (3 Students) -->
+                    <div class="space-y-6">
+                        ${[1, 2, 3].map(stId => {
+                            const student = subject.students[stId];
+                            return `
+                                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                                    <div class="bg-slate-800 text-white p-4 flex items-center justify-between">
+                                        <div class="flex items-center gap-2.5">
+                                            <span class="w-8 h-8 rounded-full bg-blue-500 font-extrabold flex items-center justify-center text-sm">${stId}</span>
+                                            <div>
+                                                <h3 class="font-bold text-sm text-white">${student.id} 수행평가 결과</h3>
+                                                <span class="text-[11px] text-slate-300">주제: ${student.topic}</span>
+                                            </div>
+                                        </div>
+                                        <span class="text-xs bg-slate-700 text-slate-300 px-3 py-1 rounded-full font-medium">
+                                            수행기록 관찰중
+                                        </span>
+                                    </div>
+
+                                    <div class="p-5 grid grid-cols-1 md:grid-cols-2 gap-5 text-xs">
+                                        <!-- Left: Student Activity Output -->
+                                        <div class="space-y-2 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                                            <h4 class="font-bold text-slate-800 flex items-center gap-1.5 text-xs border-b border-slate-200 pb-2">
+                                                <i class="fa-solid fa-file-pen text-blue-600"></i> 학생 수행 결과
+                                            </h4>
+                                            <ul class="space-y-1.5 pl-1 pt-1 text-slate-700">
+                                                ${student.performance.map(p => `
+                                                    <li class="flex items-start gap-2">
+                                                        <span class="text-blue-500 font-bold">•</span>
+                                                        <span class="leading-relaxed">${p}</span>
+                                                    </li>
+                                                `).join('')}
+                                            </ul>
+                                        </div>
+
+                                        <!-- Right: Teacher Observation Log -->
+                                        <div class="space-y-2 bg-blue-50/60 p-4 rounded-xl border border-blue-100">
+                                            <h4 class="font-bold text-blue-900 flex items-center gap-1.5 text-xs border-b border-blue-200/60 pb-2">
+                                                <i class="fa-solid fa-eye text-blue-600"></i> 교사 관찰 소견 기록
+                                            </h4>
+                                            <p class="text-slate-800 leading-relaxed pt-1 font-medium bg-white p-3 rounded-lg border border-blue-100 italic">
+                                                "${student.observation}"
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+
+                    <!-- Navigation Controls -->
+                    <div class="flex items-center justify-between pt-2">
+                        <button onclick="goToStep(2)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs px-4 py-3 rounded-xl transition-colors">
+                            <i class="fa-solid fa-arrow-left mr-1"></i> 이전 (평가기준)
+                        </button>
+                        <button onclick="goToStep(4)" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-5 py-3 rounded-xl shadow-md transition-all flex items-center gap-2">
+                            <span>수행관찰 완료 → 성취수준 판단하기</span>
+                            <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ==========================================
+        // STEP 4: TEACHER JUDGMENT & REASON
+        // ==========================================
+        function renderStep4Judgment() {
+            const subject = PRACTICE_SUBJECTS[appState.selectedSubjectId];
+            const judgments = appState.judgments[appState.selectedSubjectId];
+
+            return `
+                <div class="space-y-6">
+                    <!-- Step Header -->
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                        <div>
+                            <span class="text-xs font-bold text-blue-600">STEP 04</span>
+                            <h2 class="text-lg font-bold text-slate-800">교사 성취수준 직접 판단하기</h2>
+                            <p class="text-xs text-slate-500">학생별 수행과 관찰 기록을 바탕으로 교사의 전문적 직관에 따라 성취수준과 이유를 작성합니다.</p>
+                        </div>
+                    </div>
+
+                    <!-- Student Judgment Cards -->
+                    <div class="space-y-6">
+                        ${[1, 2, 3].map(stId => {
+                            const student = subject.students[stId];
+                            const curVal = judgments[stId].level;
+                            const curReason = judgments[stId].reason;
+
+                            return `
+                                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-4">
+                                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                                        <div class="flex items-center gap-2">
+                                            <span class="w-7 h-7 rounded-full bg-slate-800 text-white font-bold flex items-center justify-center text-xs">${stId}</span>
+                                            <h3 class="font-bold text-base text-slate-900">${student.id} 성취수준 판단</h3>
+                                        </div>
+                                        <span class="text-xs text-slate-500">
+                                            (과제: ${student.topic})
+                                        </span>
+                                    </div>
+
+                                    <!-- Concise Summary Box for Reference -->
+                                    <div class="bg-slate-50 p-3 rounded-xl text-xs text-slate-700 border border-slate-200 space-y-1">
+                                        <strong>관찰 핵심:</strong> "${student.observation}"
+                                    </div>
+
+                                    <!-- Level Radio Group -->
+                                    <div class="space-y-2">
+                                        <label class="block text-xs font-bold text-slate-700">
+                                            1) 이 학생의 최종 성취수준을 선택하세요:
+                                        </label>
+                                        <div class="grid grid-cols-3 gap-3">
+                                            ${['A', 'B', 'C'].map(lvl => {
+                                                const checked = curVal === lvl;
+                                                let btnColor = 'hover:border-blue-400 bg-white border-slate-200';
+                                                if (checked) {
+                                                    if (lvl === 'A') btnColor = 'bg-emerald-600 text-white font-bold border-emerald-600 shadow-md ring-2 ring-emerald-500/20';
+                                                    else if (lvl === 'B') btnColor = 'bg-blue-600 text-white font-bold border-blue-600 shadow-md ring-2 ring-blue-500/20';
+                                                    else if (lvl === 'C') btnColor = 'bg-amber-600 text-white font-bold border-amber-600 shadow-md ring-2 ring-amber-500/20';
+                                                }
+                                                return `
+                                                    <button type="button" 
+                                                            onclick="setTeacherLevel('${appState.selectedSubjectId}', ${stId}, '${lvl}')"
+                                                            class="py-3 px-4 rounded-xl border text-sm flex items-center justify-center gap-2 transition-all ${btnColor}">
+                                                        <span>성취수준 ${lvl}</span>
+                                                        ${checked ? '<i class="fa-solid fa-circle-check"></i>' : ''}
+                                                    </button>
+                                                `;
+                                            }).join('')}
+                                        </div>
+                                    </div>
+
+                                    <!-- Reason Input Textarea -->
+                                    <div class="space-y-1.5 pt-1">
+                                        <label class="block text-xs font-bold text-slate-700 flex items-center justify-between">
+                                            <span>2) 판단 근거 작성 (교사의 이유):</span>
+                                            <span class="text-[11px] text-slate-400 font-normal">자유롭게 입력</span>
+                                        </label>
+                                        <textarea 
+                                            rows="2"
+                                            placeholder="예: 조사 목적에 맞게 스스로 자료를 수집하고 그래프를 정확히 작성하여 자신의 말로 잘 설명하였기 때문임."
+                                            oninput="setTeacherReason('${appState.selectedSubjectId}', ${stId}, this.value)"
+                                            class="w-full p-3 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all">${curReason}</textarea>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+
+                    <!-- Navigation Controls -->
+                    <div class="flex items-center justify-between pt-2">
+                        <button onclick="goToStep(3)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs px-4 py-3 rounded-xl transition-colors">
+                            <i class="fa-solid fa-arrow-left mr-1"></i> 이전 (학생자료)
+                        </button>
+                        <button onclick="goToStep(5)" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-5 py-3 rounded-xl shadow-md transition-all flex items-center gap-2">
+                            <span>판단 완료 → 특기사항 직접 작성하기</span>
+                            <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function setTeacherLevel(subjId, stId, level) {
+            appState.judgments[subjId][stId].level = level;
+            saveStateToLocalStorage();
+            renderApp();
+            showToast(`학생 ${stId}의 성취수준이 [${level}]로 지정되었습니다.`);
+        }
+
+        function setTeacherReason(subjId, stId, text) {
+            appState.judgments[subjId][stId].reason = text;
+            saveStateToLocalStorage();
+        }
+
+        // ==========================================
+        // STEP 5: SPECIAL COMMENT WRITING
+        // ==========================================
+        function renderStep5CommentWriting() {
+            const subject = PRACTICE_SUBJECTS[appState.selectedSubjectId];
+            const judgments = appState.judgments[appState.selectedSubjectId];
+            const comments = appState.comments[appState.selectedSubjectId];
+
+            return `
+                <div class="space-y-6">
+                    <!-- Step Header -->
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                        <div>
+                            <span class="text-xs font-bold text-blue-600">STEP 05</span>
+                            <h2 class="text-lg font-bold text-slate-800">교과학습발달상황 특기사항 직접 작성하기</h2>
+                            <p class="text-xs text-slate-500">AI 서술을 참고하기 전, 교사가 관찰에 근거하여 직접 생활기록부 문장을 서술합니다.</p>
+                        </div>
+                    </div>
+
+                    <!-- Guidance Guide Question Box -->
+                    <div class="bg-blue-50 border border-blue-200 rounded-2xl p-4 text-xs space-y-2 text-blue-900">
+                        <strong class="font-bold flex items-center gap-1.5 text-blue-800">
+                            <i class="fa-solid fa-circle-question text-blue-600"></i> 특기사항 작성 가이드 질문
+                        </strong>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-slate-700 pl-1">
+                            <p>• 이 학생이 수행평가에서 무엇을 할 수 있었는가?</p>
+                            <p>• 학생의 구체적인 행동이나 수행 특징은 무엇인가?</p>
+                            <p>• 학생의 사고나 설명에서 확인된 강점/보완점은 무엇인가?</p>
+                            <p>• 관찰에서 생활기록부에 담을 핵심 문장은 무엇인가?</p>
+                        </div>
+                    </div>
+
+                    <!-- Student Comment Textarea Cards -->
+                    <div class="space-y-6">
+                        ${[1, 2, 3].map(stId => {
+                            const student = subject.students[stId];
+                            const selectedLvl = judgments[stId].level || '미선택';
+                            const commentVal = comments[stId];
+
+                            return `
+                                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-4">
+                                    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                                        <div class="flex items-center gap-2">
+                                            <span class="w-7 h-7 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center text-xs">${stId}</span>
+                                            <h3 class="font-bold text-base text-slate-900">${student.id} 특기사항 작성</h3>
+                                        </div>
+                                        <span class="text-xs bg-slate-100 text-slate-700 px-3 py-1 rounded-lg border border-slate-200 font-semibold">
+                                            내가 매긴 성취수준: <strong class="text-blue-600 font-extrabold">${selectedLvl}</strong>
+                                        </span>
+                                    </div>
+
+                                    <!-- Observation Hint -->
+                                    <div class="text-xs bg-slate-50 p-3 rounded-xl border border-slate-200 text-slate-600">
+                                        <span class="font-bold text-slate-800">관찰 기록 복습:</span> "${student.observation}"
+                                    </div>
+
+                                    <!-- Main Textarea -->
+                                    <div class="space-y-2">
+                                        <label class="block text-xs font-bold text-slate-800 flex items-center justify-between">
+                                            <span>교과학습발달상황 특기사항 문장 서술:</span>
+                                            <span class="text-[11px] text-slate-400 font-normal">~함, ~임 어조 사용 권장</span>
+                                        </label>
+                                        <textarea 
+                                            rows="3"
+                                            placeholder="예: 조사 목적에 맞는 자료를 수집하여 막대그래프로 정확하게 나타내고, 그래프의 최댓값과 최솟값을 찾아 자신의 말로 바르게 설명함."
+                                            oninput="setTeacherComment('${appState.selectedSubjectId}', ${stId}, this.value)"
+                                            class="w-full p-3.5 rounded-xl border border-slate-300 text-xs leading-relaxed focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all">${commentVal}</textarea>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+
+                    <!-- Navigation Controls -->
+                    <div class="flex items-center justify-between pt-2">
+                        <button onclick="goToStep(4)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs px-4 py-3 rounded-xl transition-colors">
+                            <i class="fa-solid fa-arrow-left mr-1"></i> 이전 (성취수준 판단)
+                        </button>
+                        <button onclick="goToStep(6)" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-6 py-3.5 rounded-xl shadow-lg transition-all flex items-center gap-2">
+                            <i class="fa-solid fa-robot"></i>
+                            <span>AI 분석 결과 확인 및 비교하기</span>
+                            <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function setTeacherComment(subjId, stId, text) {
+            appState.comments[subjId][stId] = text;
+            saveStateToLocalStorage();
+        }
+
+        // ==========================================
+        // STEP 6: AI COMPARISON & REFLECTION
+        // ==========================================
+        function renderStep6AIComparison() {
+            const subject = PRACTICE_SUBJECTS[appState.selectedSubjectId];
+            const judgments = appState.judgments[appState.selectedSubjectId];
+            const comments = appState.comments[appState.selectedSubjectId];
+            const reflections = appState.teacherReflections[appState.selectedSubjectId];
+
+            const isApiActive = appState.apiConfig.provider !== 'mock' && appState.apiConfig.apiKey;
+
+            return `
+                <div class="space-y-8">
+                    <!-- Step Header with API Trigger Banner -->
+                    <div class="bg-gradient-to-r from-slate-900 via-indigo-900 to-slate-900 text-white p-6 rounded-2xl shadow-md space-y-4">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div>
+                                <span class="text-xs font-bold text-indigo-300">STEP 06 (최종 연수 단계)</span>
+                                <h2 class="text-xl font-bold text-white mt-0.5">AI 분석 결과 비교 및 최종 문장 수정</h2>
+                                <p class="text-xs text-indigo-200 mt-1">교사의 자체 판단 및 특기사항과 AI 참고 분석 결과를 나란히 비교·검토합니다.</p>
+                            </div>
+                            <button onclick="openApiModal()" class="self-start sm:self-auto bg-white/10 hover:bg-white/20 text-white text-xs px-3.5 py-2 rounded-xl backdrop-blur-xs border border-white/20 font-semibold transition-colors flex items-center gap-1.5">
+                                <i class="fa-solid fa-gear text-indigo-300"></i> API 설정 변경
+                            </button>
+                        </div>
+
+                        <!-- Live API Action Box -->
+                        <div class="p-4 bg-white/10 backdrop-blur-md rounded-xl border border-white/15 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+                            <div class="flex items-center gap-2.5">
+                                <i class="fa-solid fa-wand-magic-sparkles text-amber-400 text-lg"></i>
+                                <div>
+                                    <strong class="text-white block">
+                                        ${isApiActive ? `연동 모드: ${appState.apiConfig.provider.toUpperCase()} (${appState.apiConfig.model})` : '현재 지원 상태: 내장 샘플 AI 모드 (오프라인)'}
+                                    </strong>
+                                    <span class="text-slate-300 text-[11px]">
+                                        ${isApiActive ? '버튼을 클릭하면 입력된 API 키로 3명 학생의 실시간 생기부 특기사항을 생성합니다.' : 'API Key를 등록하면 실시간 AI 생성이 가능합니다.'}
+                                    </span>
+                                </div>
+                            </div>
+                            <button onclick="triggerLiveAiAnalysisAllStudents()" ${appState.isGeneratingAi ? 'disabled' : ''} class="w-full sm:w-auto bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold px-4 py-2.5 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 shrink-0">
+                                ${appState.isGeneratingAi 
+                                    ? '<i class="fa-solid fa-circle-notch fa-spin"></i> AI 실시간 분석 생성 중...' 
+                                    : '<i class="fa-solid fa-bolt text-yellow-300"></i> AI 실시간 평가 분석 실행'
+                                }
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Comparison Table 1: Achievement Level Comparison -->
+                    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-4">
+                        <h3 class="text-base font-bold text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-3">
+                            <i class="fa-solid fa-table-list text-blue-600"></i> 1) 교사 판단 vs AI 분석 제안 성취수준 비교
+                        </h3>
+
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-xs text-left border-collapse">
+                                <thead>
+                                    <tr class="bg-slate-100 text-slate-700 border-b border-slate-200">
+                                        <th class="p-3 font-bold">학생 ID</th>
+                                        <th class="p-3 font-bold">교사 판단</th>
+                                        <th class="p-3 font-bold">AI 제안</th>
+                                        <th class="p-3 font-bold">일치 여부</th>
+                                        <th class="p-3 font-bold">AI 제시 핵심 근거 요약</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-200">
+                                    ${[1, 2, 3].map(stId => {
+                                        const student = subject.students[stId];
+                                        const tLvl = judgments[stId].level || '-';
+                                        const aiLvl = student.aiAnalysis.suggestedLevel;
+                                        const isMatch = tLvl === aiLvl;
+
+                                        return `
+                                            <tr class="hover:bg-slate-50">
+                                                <td class="p-3 font-bold text-slate-900">${student.id}</td>
+                                                <td class="p-3">
+                                                    <span class="font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-md border border-blue-200">${tLvl}</span>
+                                                </td>
+                                                <td class="p-3">
+                                                    <span class="font-bold text-teal-700 bg-teal-50 px-2.5 py-1 rounded-md border border-teal-200">${aiLvl}</span>
+                                                </td>
+                                                <td class="p-3">
+                                                    ${isMatch 
+                                                        ? '<span class="text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded"><i class="fa-solid fa-check mr-1"></i>일치</span>' 
+                                                        : '<span class="text-amber-600 font-bold bg-amber-50 px-2 py-0.5 rounded"><i class="fa-solid fa-triangle-exclamation mr-1"></i>불일치</span>'
+                                                    }
+                                                </td>
+                                                <td class="p-3 text-slate-600 leading-relaxed">
+                                                    <ul class="list-disc pl-3 space-y-0.5">
+                                                        ${student.aiAnalysis.reasons.map(r => `<li>${r}</li>`).join('')}
+                                                    </ul>
+                                                </td>
+                                            </tr>
+                                        `;
+                                    }).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Difference Reflection Box -->
+                        <div class="pt-2">
+                            <label class="block text-xs font-bold text-slate-700 mb-1">
+                                <i class="fa-solid fa-pen-to-square text-blue-600 mr-1"></i> 성취수준 불일치 또는 관점 차이에 대한 소견 기록:
+                            </label>
+                            <textarea 
+                                rows="2"
+                                placeholder="AI 제안 근거와 교사의 실제 판단에 차이가 있다면 그 원인(예: 관찰 기록 중 특정 요소의 무게중심 등)을 정리해 보세요."
+                                oninput="setReflectionText('${appState.selectedSubjectId}', 'reasonDiff', this.value)"
+                                class="w-full p-3 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-blue-500 outline-none">${reflections.reasonDiff || ''}</textarea>
+                        </div>
+                    </div>
+
+                    <!-- Comparison 2: Special Comments Side-by-Side -->
+                    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-6">
+                        <h3 class="text-base font-bold text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-3">
+                            <i class="fa-solid fa-code-compare text-blue-600"></i> 2) 교사 작성 문장 vs AI 제안 문장 나란히 비교
+                        </h3>
+
+                        <div class="space-y-6">
+                            ${[1, 2, 3].map(stId => {
+                                const student = subject.students[stId];
+                                const teacherText = comments[stId] || '(교사 작성 내용 없음)';
+                                const aiText = student.aiAnalysis.suggestedComment;
+
+                                return `
+                                    <div class="p-4 rounded-xl border border-slate-200 bg-slate-50 space-y-3">
+                                        <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+                                            <span class="font-bold text-xs text-slate-800">${student.id} (${student.topic})</span>
+                                            <span class="text-[11px] text-slate-500">성취수준 A/B/C 비교검토</span>
+                                        </div>
+
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                                            <!-- Left: Teacher Sentence -->
+                                            <div class="bg-white p-3.5 rounded-xl border border-blue-200 space-y-1">
+                                                <div class="flex items-center justify-between text-blue-800 font-bold mb-1">
+                                                    <span><i class="fa-solid fa-user-pen mr-1"></i> 교사 직접 작성</span>
+                                                    <button onclick="copyToClipboard('${escapeJsString(teacherText)}')" class="text-[11px] text-slate-400 hover:text-blue-600">
+                                                        <i class="fa-solid fa-copy"></i> 복사
+                                                    </button>
+                                                </div>
+                                                <p class="text-slate-800 leading-relaxed font-medium">${teacherText}</p>
+                                            </div>
+
+                                            <!-- Right: AI Sentence -->
+                                            <div class="bg-teal-50/50 p-3.5 rounded-xl border border-teal-200 space-y-1">
+                                                <div class="flex items-center justify-between text-teal-900 font-bold mb-1">
+                                                    <span><i class="fa-solid fa-robot mr-1"></i> AI 참고 제안 문장</span>
+                                                    <button onclick="copyToClipboard('${escapeJsString(aiText)}')" class="text-[11px] text-teal-600 hover:text-teal-800 font-semibold">
+                                                        <i class="fa-solid fa-copy"></i> 복사하기
+                                                    </button>
+                                                </div>
+                                                <p class="text-slate-800 leading-relaxed font-medium">${aiText}</p>
+                                            </div>
+                                        </div>
+
+                                        <!-- Teacher Editable Finalizing Input -->
+                                        <div class="pt-2">
+                                            <label class="block text-[11px] font-bold text-slate-700 mb-1">
+                                                [최종 문장 보완 및 수정 저장]:
+                                            </label>
+                                            <div class="flex gap-2">
+                                                <input 
+                                                    type="text" 
+                                                    value="${teacherText}"
+                                                    id="final-input-${stId}"
+                                                    onchange="setTeacherComment('${appState.selectedSubjectId}', ${stId}, this.value)"
+                                                    class="flex-1 p-2.5 rounded-lg border border-slate-300 text-xs focus:ring-2 focus:ring-blue-500 outline-none" 
+                                                />
+                                                <button onclick="applyAiToFinal(${stId}, '${escapeJsString(aiText)}')" class="bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold text-xs px-3 py-2 rounded-lg transition-colors shrink-0">
+                                                    AI문장 가져오기
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+
+                    <!-- Synthesis Reflection Questions (Mission 5 & Final Reflection) -->
+                    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5">
+                        <h3 class="text-base font-bold text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-3">
+                            <i class="fa-solid fa-comments text-blue-600"></i> 3) 연수 종합 성찰 질문 및 기록
+                        </h3>
+
+                        <div class="space-y-4 text-xs">
+                            <div class="space-y-1.5">
+                                <label class="font-bold text-slate-800 block">
+                                    Q1. 성취수준을 판단할 때 가장 중요하게 본 근거는 무엇인가요?
+                                </label>
+                                <textarea rows="2" 
+                                          oninput="setReflectionText('${appState.selectedSubjectId}', 'q1', this.value)"
+                                          placeholder="예: 교육과정 성취기준의 핵심 수행요소 완수 여부와 학생의 자발성..."
+                                          class="w-full p-3 rounded-xl border border-slate-300 outline-none focus:ring-2 focus:ring-blue-500">${reflections.q1 || ''}</textarea>
+                            </div>
+
+                            <div class="space-y-1.5">
+                                <label class="font-bold text-slate-800 block">
+                                    Q2. 수행평가 점수/결과물과 수업 관찰 결과가 다를 경우 교사는 어떻게 판단해야 하는가?
+                                </label>
+                                <textarea rows="2" 
+                                          oninput="setReflectionText('${appState.selectedSubjectId}', 'q2', this.value)"
+                                          placeholder="예: 지필적 포맷 외에 평소 수업 중 보여준 지속적인 관찰 기록을 상호 보완하여 관찰 근거를 보강함..."
+                                          class="w-full p-3 rounded-xl border border-slate-300 outline-none focus:ring-2 focus:ring-blue-500">${reflections.q2 || ''}</textarea>
+                            </div>
+
+                            <div class="space-y-1.5">
+                                <label class="font-bold text-slate-800 block">
+                                    Q3. AI가 제안한 특기사항 문장에서 실제 관찰 근거에 없는 과장된 표현이 포함되어 있지는 않나요?
+                                </label>
+                                <textarea rows="2" 
+                                          oninput="setReflectionText('${appState.selectedSubjectId}', 'q3', this.value)"
+                                          placeholder="예: AI의 표현 중 '매우 뛰어남'과 같은 추상적 미화 수식어를 삭제하고 실제 관찰된 행동 중심 문장으로 정제함..."
+                                          class="w-full p-3 rounded-xl border border-slate-300 outline-none focus:ring-2 focus:ring-blue-500">${reflections.q3 || ''}</textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Final Summary Report Generator -->
+                    <div class="bg-blue-900 text-white p-6 rounded-2xl space-y-4 shadow-xl">
+                        <div class="flex items-center justify-between">
+                            <h3 class="font-bold text-base text-white flex items-center gap-2">
+                                <i class="fa-solid fa-award text-yellow-400"></i> 나의 실습 종합 결과 리포트
+                            </h3>
+                            <button onclick="copyFullReport()" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all shadow-md flex items-center gap-1.5">
+                                <i class="fa-solid fa-file-export"></i> 전체 실습 리포트 텍스트 복사
+                            </button>
+                        </div>
+                        <p class="text-xs text-blue-200">
+                            연수가 완료되었습니다. 작성하신 성취수준 판단 및 최종 특기사항 결과는 클립보드로 복사하여 연수 제출 자료나 포트폴리오로 보관하실 수 있습니다.
+                        </p>
+                    </div>
+
+                    <!-- Navigation Controls -->
+                    <div class="flex items-center justify-between pt-2">
+                        <button onclick="goToStep(5)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs px-4 py-3 rounded-xl transition-colors">
+                            <i class="fa-solid fa-arrow-left mr-1"></i> 이전 (특기사항 작성)
+                        </button>
+                        <button onclick="openCustomAlert('실습 완료', '수고하셨습니다! 교과학습발달상황 작성 연수 실습이 성공적으로 마쳐졌습니다.')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-6 py-3.5 rounded-xl shadow-lg transition-all flex items-center gap-2">
+                            <i class="fa-solid fa-check"></i>
+                            <span>연수 실습 완료</span>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function setReflectionText(subjId, fieldKey, val) {
+            appState.teacherReflections[subjId][fieldKey] = val;
+            saveStateToLocalStorage();
+        }
+
+        function applyAiToFinal(stId, aiText) {
+            const input = document.getElementById(`final-input-${stId}`);
+            if (input) {
+                input.value = aiText;
+                setTeacherComment(appState.selectedSubjectId, stId, aiText);
+                showToast(`학생 ${stId}의 문장에 AI 제안이 적용되었습니다.`);
+            }
+        }
+
+        function escapeJsString(str) {
+            if (!str) return '';
+            return str.replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/\n/g, ' ');
+        }
+
+        function copyToClipboard(text) {
+            if (!text) return;
+            const dummy = document.createElement('textarea');
+            document.body.appendChild(dummy);
+            dummy.value = text;
+            dummy.select();
+            document.execCommand('copy');
+            document.body.removeChild(dummy);
+            showToast('클립보드에 복사되었습니다.');
+        }
+
+        function copyFullReport() {
+            const subject = PRACTICE_SUBJECTS[appState.selectedSubjectId];
+            const judgments = appState.judgments[appState.selectedSubjectId];
+            const comments = appState.comments[appState.selectedSubjectId];
+            const reflections = appState.teacherReflections[appState.selectedSubjectId];
+
+            let report = `[교과학습발달상황 작성 실습 연수 결과 보고서]\n`;
+            report += `실습 과목: ${subject.title}\n`;
+            report += `성취기준: ${subject.achievementStandard}\n`;
+            report += `API 연동 정보: ${appState.apiConfig.provider.toUpperCase()} (${appState.apiConfig.model || 'Default'})\n`;
+            report += `-------------------------------------------\n\n`;
+
+            [1, 2, 3].forEach(stId => {
+                const student = subject.students[stId];
+                report += `▶ ${student.id}\n`;
+                report += `- 교사 성취수준 판단: ${judgments[stId].level || '미선택'}\n`;
+                report += `- 판단 근거: ${judgments[stId].reason || '미입력'}\n`;
+                report += `- 최종 특기사항: ${comments[stId] || '미작성'}\n`;
+                report += `- AI 참고 제안: ${student.aiAnalysis.suggestedComment}\n\n`;
+            });
+
+            report += `-------------------------------------------\n`;
+            report += `[연수 종합 성찰]\n`;
+            report += `Q1. 성취수준 중요 근거: ${reflections.q1 || '-'}\n`;
+            report += `Q2. 결과물과 관찰 차이 판단: ${reflections.q2 || '-'}\n`;
+            report += `Q3. AI 문장 정제 소견: ${reflections.q3 || '-'}\n`;
+
+            copyToClipboard(report);
+        }
+    </script>
+</body>
+</html>
