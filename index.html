@@ -52,56 +52,6 @@
         ::-webkit-scrollbar-thumb:hover {
             background: #94a3b8;
         }
-
-        /* ==========================================
-           MOBILE READABILITY OVERRIDES
-           Tailwind's text-xs/text-sm/text-[11px] utilities
-           (used heavily throughout for a dense desktop layout)
-           read too small on phone screens. On narrow viewports,
-           bump the actual rendered size up while keeping the
-           same classes/markup, so desktop layout is untouched.
-           ========================================== */
-        @media (max-width: 640px) {
-            body {
-                font-size: 16px;
-            }
-            .text-\[11px\] {
-                font-size: 13px !important;
-                line-height: 1.5rem !important;
-            }
-            .text-xs {
-                font-size: 14px !important;
-                line-height: 1.5rem !important;
-            }
-            .text-sm {
-                font-size: 15px !important;
-                line-height: 1.6rem !important;
-            }
-            .text-base {
-                font-size: 17px !important;
-                line-height: 1.65rem !important;
-            }
-            .text-lg {
-                font-size: 19px !important;
-                line-height: 1.7rem !important;
-            }
-            .text-xl {
-                font-size: 21px !important;
-                line-height: 1.75rem !important;
-            }
-            .text-2xl {
-                font-size: 24px !important;
-                line-height: 1.9rem !important;
-            }
-            .text-3xl {
-                font-size: 27px !important;
-                line-height: 2.1rem !important;
-            }
-            /* Inputs/textareas should never trigger iOS auto-zoom */
-            textarea, input, select {
-                font-size: 16px !important;
-            }
-        }
     </style>
 </head>
 <body class="text-slate-800 antialiased min-h-screen flex flex-col justify-between selection:bg-blue-100 selection:text-blue-800">
@@ -418,7 +368,7 @@
                 achievementStandard: '[4영01-02] 사물의 위치를 묻고 답하는 말을 듣고 이해하며 표현할 수 있다.',
                 domain: '말하기 / 듣기',
                 evalElement: '위치를 나타내는 낱말(on, in, under, behind)을 활용하여 사물의 위치 묻고 답하기',
-                evalMethod: '구통 수행평가 및 짝 활동 관찰',
+                evalMethod: '수행평가 및 짝 활동 관찰', // [수정 반영] '구통' 단어 삭제
                 evalCriteriaText: {
                     A: '사물의 위치를 묻고 답하는 주요 표현(Where is/It\'s on, in, under, behind)을 위치 낱말과 함께 정확하고 유창하게 표현할 수 있다.',
                     B: '사물의 위치를 묻고 답하는 말을 이해하고 핵심 표현을 바탕으로 위치를 말할 수 있다.',
@@ -850,7 +800,8 @@
                                 <span class="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold shrink-0 text-xs">3</span>
                                 <div>
                                     <strong class="text-slate-800 block text-sm font-bold">성취수준 직접 판단</strong>
-                                    <p class="text-slate-500 mt-0.5">교사의 직관과 관찰 근거에 따라 A / B / C를 결정하고 근거를 기록합니다.</p>
+                                    <!-- [수정 반영] 수행평가 결과와 관찰 근거에 따라 문구로 수정 -->
+                                    <p class="text-slate-500 mt-0.5">수행평가 결과와 관찰 근거에 따라 A / B / C를 결정하고 근거를 기록합니다.</p>
                                 </div>
                             </div>
                             <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex items-start gap-3">
@@ -1040,7 +991,6 @@
                             <strong class="text-indigo-800 block mb-1"><i class="fa-solid fa-eye mr-1"></i>교사 관찰 기록</strong>
                             <p class="text-slate-700 leading-relaxed italic">"${student.observation}"</p>
                         </div>
-                        ${opts.hideAiAnalysis ? '' : `
                         <div class="bg-white p-3 rounded-xl border border-indigo-100">
                             <strong class="text-indigo-800 block mb-1"><i class="fa-solid fa-robot mr-1"></i>3단계 분석 결과 (AI 참고)</strong>
                             <p class="text-slate-500 mb-1">제안 성취수준: <strong class="text-teal-700">${student.aiAnalysis.suggestedLevel}</strong></p>
@@ -1048,17 +998,6 @@
                                 ${student.aiAnalysis.reasons.map(r => `<li>${r}</li>`).join('')}
                             </ul>
                         </div>
-                        `}
-                        ${opts.teacherLevel !== undefined ? `
-                        <div class="bg-white p-3 rounded-xl border border-indigo-100">
-                            <strong class="text-indigo-800 block mb-1"><i class="fa-solid fa-user-check mr-1"></i>4단계에서 선택한 성취수준</strong>
-                            <p class="text-slate-700">
-                                ${opts.teacherLevel
-                                    ? `<span class="font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-md border border-blue-200">성취수준 ${opts.teacherLevel}</span>`
-                                    : '<span class="text-slate-400 italic">아직 선택되지 않음 (4단계에서 선택해 주세요)</span>'}
-                            </p>
-                        </div>
-                        ` : ''}
                     </div>
                 </div>
             `;
@@ -1197,7 +1136,7 @@
                                     </div>
 
                                     <!-- [참고자료] Step 3 학생 자료 (읽기 전용, 접기/펼치기 가능) -->
-                                    ${renderStage3ReferenceCard(subject, stId, { uid: `step4-ref-${stId}`, defaultCollapsed: true, hideAiAnalysis: true })}
+                                    ${renderStage3ReferenceCard(subject, stId, { uid: `step4-ref-${stId}`, defaultCollapsed: true })}
 
                                     <!-- [작성 영역] 4단계 성취수준 판단 -->
                                     <div class="text-xs font-bold text-emerald-700 flex items-center gap-1.5 pt-1 border-t border-dashed border-slate-200">
@@ -1325,7 +1264,7 @@
                                     </div>
 
                                     <!-- [참고자료] Step 3 학생 자료 (읽기 전용, 접기/펼치기 가능) -->
-                                    ${renderStage3ReferenceCard(subject, stId, { uid: `step5-ref-${stId}`, defaultCollapsed: true, hideAiAnalysis: true, teacherLevel: judgments[stId].level })}
+                                    ${renderStage3ReferenceCard(subject, stId, { uid: `step5-ref-${stId}`, defaultCollapsed: true })}
 
                                     <!-- [작성 영역] 4단계 성취수준 및 특기사항 작성 -->
                                     <div class="text-xs font-bold text-emerald-700 flex items-center gap-1.5 pt-1 border-t border-dashed border-slate-200">
@@ -1470,7 +1409,7 @@
                                         </div>
 
                                         <!-- [3단계 학생 자료] 원자료 그대로 읽기 전용 표시 -->
-                                        ${renderStage3ReferenceCard(subject, stId, { uid: `step6-ref-${stId}`, forceOpen: true, hideAiAnalysis: true, teacherLevel: judgments[stId].level })}
+                                        ${renderStage3ReferenceCard(subject, stId, { uid: `step6-ref-${stId}`, forceOpen: true })}
 
                                         <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wide pt-1">
                                             [4단계 성취수준 및 특기사항 작성 결과]
