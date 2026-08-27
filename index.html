@@ -1049,6 +1049,16 @@
                             </ul>
                         </div>
                         `}
+                        ${opts.teacherLevel !== undefined ? `
+                        <div class="bg-white p-3 rounded-xl border border-indigo-100">
+                            <strong class="text-indigo-800 block mb-1"><i class="fa-solid fa-user-check mr-1"></i>4단계에서 선택한 성취수준</strong>
+                            <p class="text-slate-700">
+                                ${opts.teacherLevel
+                                    ? `<span class="font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-md border border-blue-200">성취수준 ${opts.teacherLevel}</span>`
+                                    : '<span class="text-slate-400 italic">아직 선택되지 않음 (4단계에서 선택해 주세요)</span>'}
+                            </p>
+                        </div>
+                        ` : ''}
                     </div>
                 </div>
             `;
@@ -1315,7 +1325,7 @@
                                     </div>
 
                                     <!-- [참고자료] Step 3 학생 자료 (읽기 전용, 접기/펼치기 가능) -->
-                                    ${renderStage3ReferenceCard(subject, stId, { uid: `step5-ref-${stId}`, defaultCollapsed: true })}
+                                    ${renderStage3ReferenceCard(subject, stId, { uid: `step5-ref-${stId}`, defaultCollapsed: true, hideAiAnalysis: true, teacherLevel: judgments[stId].level })}
 
                                     <!-- [작성 영역] 4단계 성취수준 및 특기사항 작성 -->
                                     <div class="text-xs font-bold text-emerald-700 flex items-center gap-1.5 pt-1 border-t border-dashed border-slate-200">
@@ -1460,7 +1470,7 @@
                                         </div>
 
                                         <!-- [3단계 학생 자료] 원자료 그대로 읽기 전용 표시 -->
-                                        ${renderStage3ReferenceCard(subject, stId, { uid: `step6-ref-${stId}`, forceOpen: true })}
+                                        ${renderStage3ReferenceCard(subject, stId, { uid: `step6-ref-${stId}`, forceOpen: true, hideAiAnalysis: true, teacherLevel: judgments[stId].level })}
 
                                         <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wide pt-1">
                                             [4단계 성취수준 및 특기사항 작성 결과]
