@@ -945,6 +945,75 @@
         }
 
         // ==========================================
+        // SHARED: STEP 3 STUDENT DATA REFERENCE CARD
+        // (Single source of truth: subject.students[stId].
+        //  Rendered read-only in Steps 4/5/6 so edits to Step 3
+        //  data automatically propagate everywhere it's referenced.)
+        // ==========================================
+        function renderStage3ReferenceCard(subject, stId, opts = {}) {
+            const uid = opts.uid || `ref-${stId}`;
+            const student = subject && subject.students ? subject.students[stId] : null;
+            const forceOpen = !!opts.forceOpen;
+            const startCollapsed = !forceOpen && !!opts.defaultCollapsed;
+
+            if (!student) {
+                return `
+                    <div class="bg-slate-50 border border-dashed border-slate-300 rounded-2xl p-4 text-xs text-slate-500 italic flex items-center gap-2">
+                        <i class="fa-solid fa-circle-info text-slate-400"></i>
+                        3단계에 입력된 학생 자료가 없습니다.
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="bg-indigo-50/70 border border-indigo-200 rounded-2xl overflow-hidden">
+                    <button type="button"
+                            onclick="toggleReferenceCard('${uid}')"
+                            class="w-full flex items-center justify-between gap-2 p-3.5 text-left ${forceOpen ? 'cursor-default' : 'hover:bg-indigo-100/50 transition-colors'}">
+                        <span class="text-xs font-bold text-indigo-900 flex items-center gap-1.5">
+                            <i class="fa-solid fa-thumbtack text-indigo-600"></i> 📌 3단계 학생 자료 참고 <span class="font-normal text-indigo-400">(읽기 전용)</span>
+                        </span>
+                        ${forceOpen ? '' : `<i id="${uid}-icon" class="fa-solid fa-chevron-${startCollapsed ? 'down' : 'up'} text-indigo-400 text-xs"></i>`}
+                    </button>
+                    <div id="${uid}" class="${startCollapsed ? 'hidden' : ''} px-4 pb-4 space-y-2.5 text-xs">
+                        <div class="bg-white p-3 rounded-xl border border-indigo-100">
+                            <strong class="text-indigo-800 block mb-1"><i class="fa-solid fa-bullseye mr-1"></i>선택 성취기준</strong>
+                            <p class="text-slate-700 leading-relaxed">${subject.achievementStandard}</p>
+                        </div>
+                        <div class="bg-white p-3 rounded-xl border border-indigo-100">
+                            <strong class="text-indigo-800 block mb-1"><i class="fa-solid fa-file-pen mr-1"></i>학생 수행 내용</strong>
+                            <ul class="list-disc pl-4 space-y-0.5 text-slate-700">
+                                ${student.performance.map(p => `<li>${p}</li>`).join('')}
+                            </ul>
+                        </div>
+                        <div class="bg-white p-3 rounded-xl border border-indigo-100">
+                            <strong class="text-indigo-800 block mb-1"><i class="fa-solid fa-eye mr-1"></i>교사 관찰 기록</strong>
+                            <p class="text-slate-700 leading-relaxed italic">"${student.observation}"</p>
+                        </div>
+                        <div class="bg-white p-3 rounded-xl border border-indigo-100">
+                            <strong class="text-indigo-800 block mb-1"><i class="fa-solid fa-robot mr-1"></i>3단계 분석 결과 (AI 참고)</strong>
+                            <p class="text-slate-500 mb-1">제안 성취수준: <strong class="text-teal-700">${student.aiAnalysis.suggestedLevel}</strong></p>
+                            <ul class="list-disc pl-4 space-y-0.5 text-slate-700">
+                                ${student.aiAnalysis.reasons.map(r => `<li>${r}</li>`).join('')}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function toggleReferenceCard(id) {
+            const el = document.getElementById(id);
+            const icon = document.getElementById(`${id}-icon`);
+            if (!el) return;
+            el.classList.toggle('hidden');
+            if (icon) {
+                icon.classList.toggle('fa-chevron-up');
+                icon.classList.toggle('fa-chevron-down');
+            }
+        }
+
+        // ==========================================
         // STEP 3: STUDENT DATA OBSERVATION
         // ==========================================
         function renderStep3StudentData() {
@@ -1065,9 +1134,12 @@
                                         </span>
                                     </div>
 
-                                    <!-- Concise Summary Box for Reference -->
-                                    <div class="bg-slate-50 p-3 rounded-xl text-xs text-slate-700 border border-slate-200 space-y-1">
-                                        <strong>관찰 핵심:</strong> "${student.observation}"
+                                    <!-- [참고자료] Step 3 학생 자료 (읽기 전용, 접기/펼치기 가능) -->
+                                    ${renderStage3ReferenceCard(subject, stId, { uid: `step4-ref-${stId}`, defaultCollapsed: true })}
+
+                                    <!-- [작성 영역] 4단계 성취수준 판단 -->
+                                    <div class="text-xs font-bold text-emerald-700 flex items-center gap-1.5 pt-1 border-t border-dashed border-slate-200">
+                                        <i class="fa-solid fa-pen-nib"></i> ✏️ 작성 영역: 성취수준 판단
                                     </div>
 
                                     <!-- Level Radio Group -->
@@ -1190,9 +1262,12 @@
                                         </span>
                                     </div>
 
-                                    <!-- Observation Hint -->
-                                    <div class="text-xs bg-slate-50 p-3 rounded-xl border border-slate-200 text-slate-600">
-                                        <span class="font-bold text-slate-800">관찰 기록 복습:</span> "${student.observation}"
+                                    <!-- [참고자료] Step 3 학생 자료 (읽기 전용, 접기/펼치기 가능) -->
+                                    ${renderStage3ReferenceCard(subject, stId, { uid: `step5-ref-${stId}`, defaultCollapsed: true })}
+
+                                    <!-- [작성 영역] 4단계 성취수준 및 특기사항 작성 -->
+                                    <div class="text-xs font-bold text-emerald-700 flex items-center gap-1.5 pt-1 border-t border-dashed border-slate-200">
+                                        <i class="fa-solid fa-pen-nib"></i> ✏️ 작성 영역: 성취수준 및 특기사항
                                     </div>
 
                                     <!-- Main Textarea -->
@@ -1328,8 +1403,15 @@
                                 return `
                                     <div class="p-4 rounded-xl border border-slate-200 bg-slate-50 space-y-3">
                                         <div class="flex items-center justify-between border-b border-slate-200 pb-2">
-                                            <span class="font-bold text-xs text-slate-800">${student.id} (${student.topic})</span>
+                                            <span class="font-bold text-xs text-slate-800"><i class="fa-solid fa-id-card text-slate-400 mr-1"></i>[학생 정보] ${student.id} (${student.topic})</span>
                                             <span class="text-[11px] text-slate-500">성취수준 및 특기사항 비교 검토</span>
+                                        </div>
+
+                                        <!-- [3단계 학생 자료] 원자료 그대로 읽기 전용 표시 -->
+                                        ${renderStage3ReferenceCard(subject, stId, { uid: `step6-ref-${stId}`, forceOpen: true })}
+
+                                        <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wide pt-1">
+                                            [4단계 성취수준 및 특기사항 작성 결과]
                                         </div>
 
                                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
@@ -1380,6 +1462,21 @@
                                                     <span>저장</span>
                                                 </button>
                                             </div>
+                                        </div>
+
+                                        <!-- [최종 검토] 3단계 자료 근거 여부 자가 점검 (참고용, 교사 최종 판단 대체 아님) -->
+                                        <div class="bg-amber-50/70 border border-amber-200 rounded-xl p-3.5 space-y-1.5">
+                                            <strong class="text-amber-900 text-xs flex items-center gap-1.5">
+                                                <i class="fa-solid fa-magnifying-glass text-amber-600"></i> 🔎 최종 검토 (참고용 자가 점검 · 교사의 최종 판단을 대신하지 않음)
+                                            </strong>
+                                            <ul class="text-[11px] text-amber-900/90 space-y-1 pl-1">
+                                                <li>· 작성 내용이 3단계 학생 자료(수행 내용·관찰 기록)에 근거하고 있는가?</li>
+                                                <li>· 학생의 실제 수행 수준보다 과도하게 높거나 낮게 표현되지 않았는가?</li>
+                                                <li>· 성취기준과 학생 수행 내용이 연결되어 있는가?</li>
+                                                <li>· 학생의 학습활동 참여와 변화·성장이 적절하게 드러나는가?</li>
+                                                <li>· 3단계 자료에 없는 내용을 임의로 추가하지 않았는가?</li>
+                                                <li>· 동일하거나 반복적인 표현이 지나치게 사용되지 않았는가?</li>
+                                            </ul>
                                         </div>
                                     </div>
                                 `;
