@@ -52,6 +52,56 @@
         ::-webkit-scrollbar-thumb:hover {
             background: #94a3b8;
         }
+
+        /* ==========================================
+           MOBILE READABILITY OVERRIDES
+           Tailwind's text-xs/text-sm/text-[11px] utilities
+           (used heavily throughout for a dense desktop layout)
+           read too small on phone screens. On narrow viewports,
+           bump the actual rendered size up while keeping the
+           same classes/markup, so desktop layout is untouched.
+           ========================================== */
+        @media (max-width: 640px) {
+            body {
+                font-size: 16px;
+            }
+            .text-\[11px\] {
+                font-size: 13px !important;
+                line-height: 1.5rem !important;
+            }
+            .text-xs {
+                font-size: 14px !important;
+                line-height: 1.5rem !important;
+            }
+            .text-sm {
+                font-size: 15px !important;
+                line-height: 1.6rem !important;
+            }
+            .text-base {
+                font-size: 17px !important;
+                line-height: 1.65rem !important;
+            }
+            .text-lg {
+                font-size: 19px !important;
+                line-height: 1.7rem !important;
+            }
+            .text-xl {
+                font-size: 21px !important;
+                line-height: 1.75rem !important;
+            }
+            .text-2xl {
+                font-size: 24px !important;
+                line-height: 1.9rem !important;
+            }
+            .text-3xl {
+                font-size: 27px !important;
+                line-height: 2.1rem !important;
+            }
+            /* Inputs/textareas should never trigger iOS auto-zoom */
+            textarea, input, select {
+                font-size: 16px !important;
+            }
+        }
     </style>
 </head>
 <body class="text-slate-800 antialiased min-h-screen flex flex-col justify-between selection:bg-blue-100 selection:text-blue-800">
@@ -990,6 +1040,7 @@
                             <strong class="text-indigo-800 block mb-1"><i class="fa-solid fa-eye mr-1"></i>교사 관찰 기록</strong>
                             <p class="text-slate-700 leading-relaxed italic">"${student.observation}"</p>
                         </div>
+                        ${opts.hideAiAnalysis ? '' : `
                         <div class="bg-white p-3 rounded-xl border border-indigo-100">
                             <strong class="text-indigo-800 block mb-1"><i class="fa-solid fa-robot mr-1"></i>3단계 분석 결과 (AI 참고)</strong>
                             <p class="text-slate-500 mb-1">제안 성취수준: <strong class="text-teal-700">${student.aiAnalysis.suggestedLevel}</strong></p>
@@ -997,6 +1048,7 @@
                                 ${student.aiAnalysis.reasons.map(r => `<li>${r}</li>`).join('')}
                             </ul>
                         </div>
+                        `}
                     </div>
                 </div>
             `;
@@ -1135,7 +1187,7 @@
                                     </div>
 
                                     <!-- [참고자료] Step 3 학생 자료 (읽기 전용, 접기/펼치기 가능) -->
-                                    ${renderStage3ReferenceCard(subject, stId, { uid: `step4-ref-${stId}`, defaultCollapsed: true })}
+                                    ${renderStage3ReferenceCard(subject, stId, { uid: `step4-ref-${stId}`, defaultCollapsed: true, hideAiAnalysis: true })}
 
                                     <!-- [작성 영역] 4단계 성취수준 판단 -->
                                     <div class="text-xs font-bold text-emerald-700 flex items-center gap-1.5 pt-1 border-t border-dashed border-slate-200">
